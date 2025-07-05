@@ -1,0 +1,133 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  displayName String?
+  role        String   @default("agent")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relationships
+  farmers     Farmer[]
+  
+  @@map("users")
+}
+
+model Farmer {
+  id                String    @id @default(cuid())
+  
+  // Personal Information
+  nin               String    @unique
+  firstName         String
+  middleName        String?
+  lastName          String
+  dateOfBirth       DateTime?
+  gender            String?
+  phone             String    @unique
+  email             String?   @unique
+  maritalStatus     String?
+  
+  // Address Information
+  address           String?
+  state             String?
+  lga               String?
+  ward              String?
+  latitude          Float?
+  longitude         Float?
+  
+  // Bank Information
+  bankName          String?
+  accountNumber     String?
+  bvn               String?   @unique
+  
+  // Farm Information
+  farmSize          Float?
+  primaryCrop       String?
+  secondaryCrop     String?
+  farmingExperience Int?
+  farmLatitude      Float?
+  farmLongitude     Float?
+  farmPolygon       Json?
+  
+  // System Information
+  registrationDate  DateTime  @default(now())
+  status            String    @default("active")
+  agentId           String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  // Relationships
+  agent             User?     @relation(fields: [agentId], references: [id])
+  referees          Referee[]
+  certificates      Certificate[]
+  
+  @@map("farmers")
+}
+
+model Referee {
+  id           String @id @default(cuid())
+  firstName    String
+  lastName     String
+  phone        String
+  relationship String
+  farmerId     String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relationships
+  farmer       Farmer @relation(fields: [farmerId], references: [id], onDelete: Cascade)
+  
+  @@map("referees")
+}
+
+model Certificate {
+  id            String   @id @default(cuid())
+  certificateId String   @unique
+  farmerId      String
+  issuedDate    DateTime @default(now())
+  expiryDate    DateTime?
+  status        String   @default("active")
+  qrCode        String?
+  pdfPath       String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  // Relationships
+  farmer        Farmer   @relation(fields: [farmerId], references: [id], onDelete: Cascade)
+  
+  @@map("certificates")
+}
+
+model Analytics {
+  id            String   @id @default(cuid())
+  metric        String
+  value         Json
+  date          DateTime @default(now())
+  createdAt     DateTime @default(now())
+  
+  @@map("analytics")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  action    String
+  tableName String
+  recordId  String?
+  oldValues Json?
+  newValues Json?
+  userId    String?
+  timestamp DateTime @default(now())
+  
+  @@map("audit_logs")
+}
