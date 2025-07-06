@@ -1,16 +1,9 @@
-import jwt from 'jsonwebtoken';
+import { auth } from './firebase-admin';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret';
-
-export const generateToken = (payload) => {
-  return jwt.sign(payload, JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRES_IN || '24h',
-  });
-};
-
-export const verifyToken = (token) => {
+export const verifyToken = async (token) => {
   try {
-    return jwt.verify(token, JWT_SECRET);
+    const decodedToken = await auth.verifyIdToken(token);
+    return decodedToken;
   } catch (error) {
     throw new Error('Invalid token');
   }
@@ -25,8 +18,13 @@ export const authMiddleware = (handler) => {
         return res.status(401).json({ error: 'No token provided' });
       }
 
-      const decoded = verifyToken(token);
-      req.user = decoded;
+      const decodedToken = await verifyToken(token);
+      req.user = {
+        id: decodedToken.uid,
+        email: decodedToken.email,
+        emailVerified: decodedToken.email_verified,
+        displayName: decodedToken.name || decodedToken.email,
+      };
       
       return handler(req, res);
     } catch (error) {

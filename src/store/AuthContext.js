@@ -1,5 +1,12 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authService } from '../services/supabase';
+import { 
+  onAuthStateChanged, 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signOut as firebaseSignOut,
+  updateProfile
+} from 'firebase/auth';
+import { auth } from '../services/firebase';
 
 const AuthContext = createContext({});
 
@@ -16,46 +23,88 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
-    authService.getCurrentUser().then((user) => {
-      setUser(user);
+    // Listen for auth state changes
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        // Convert Firebase user to our user format
+        const userData = {
+          id: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName,
+          emailVerified: firebaseUser.emailVerified,
+          createdAt: firebaseUser.metadata.creationTime,
+          lastSignInTime: firebaseUser.metadata.lastSignInTime,
+        };
+        setUser(userData);
+      } else {
+        setUser(null);
+      }
       setLoading(false);
     });
 
-    // Listen for auth changes
-    const { data: { subscription } } = authService.onAuthStateChange(
-      (event, session) => {
-        setUser(session?.user ?? null);
-        setLoading(false);
-      }
-    );
-
-    return () => subscription.unsubscribe();
+    return () => unsubscribe();
   }, []);
 
   const signIn = async (email, password) => {
     try {
-      const { user } = await authService.signIn(email, password);
-      setUser(user);
+      setLoading(true);
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
+      
+      const userData = {
+        id: firebaseUser.uid,
+        email: firebaseUser.email,
+        displayName: firebaseUser.displayName,
+        emailVerified: firebaseUser.emailVerified,
+        createdAt: firebaseUser.metadata.creationTime,
+        lastSignInTime: firebaseUser.metadata.lastSignInTime,
+      };
+      
+      setUser(userData);
+      return { user: userData };
     } catch (error) {
+      setLoading(false);
       throw error;
     }
   };
 
-  const signUp = async (email, password, userData) => {
+  const signUp = async (email, password, userData = {}) => {
     try {
-      const { user } = await authService.signUp(email, password, userData);
+      setLoading(true);
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const firebaseUser = userCredential.user;
+      
+      // Update profile with display name if provided
+      if (userData.displayName) {
+        await updateProfile(firebaseUser, {
+          displayName: userData.displayName,
+        });
+      }
+      
+      const user = {
+        id: firebaseUser.uid,
+        email: firebaseUser.email,
+        displayName: userData.displayName || firebaseUser.displayName,
+        emailVerified: firebaseUser.emailVerified,
+        createdAt: firebaseUser.metadata.creationTime,
+        lastSignInTime: firebaseUser.metadata.lastSignInTime,
+      };
+      
       setUser(user);
+      return { user };
     } catch (error) {
+      setLoading(false);
       throw error;
     }
   };
 
   const signOut = async () => {
     try {
-      await authService.signOut();
+      setLoading(true);
+      await firebaseSignOut(auth);
       setUser(null);
     } catch (error) {
+      setLoading(false);
       throw error;
     }
   };

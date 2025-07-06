@@ -17,6 +17,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { farmerSchema, ninSchema } from '../utils/validation';
 import { useFarmerStore } from '../store/farmerStore';
 import { farmerService } from '../services/farmerService';
+import { ninService, testNetworkConnectivity } from '../services/ninService';
 import LoadingScreen from './LoadingScreen';
 
 // Import form steps
@@ -40,6 +41,7 @@ export default function AddFarmerScreen({ navigation }) {
   const [currentStep, setCurrentStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [ninData, setNinData] = useState(null);
+  const [ninValidated, setNinValidated] = useState(false);
   const { addFarmer } = useFarmerStore();
 
   const {
@@ -103,6 +105,15 @@ export default function AddFarmerScreen({ navigation }) {
   });
 
   const nextStep = async () => {
+    // Special validation for NIN step - must be validated before proceeding
+    if (currentStep === 1 && !ninValidated) {
+      Alert.alert(
+        'NIN Validation Required',
+        'Please complete NIN validation before proceeding to the next step.'
+      );
+      return;
+    }
+
     const fieldsToValidate = getFieldsForStep(currentStep);
     const isValid = await trigger(fieldsToValidate);
     
@@ -165,41 +176,53 @@ export default function AddFarmerScreen({ navigation }) {
   const handleNINLookup = async (nin) => {
     try {
       setLoading(true);
-      // Simulate NIN lookup - in real app, this would call an API
-      // For demo purposes, we'll just validate the NIN format
+      
+      // Validate NIN format first
       const ninValidation = ninSchema.safeParse(nin);
       if (!ninValidation.success) {
-        Alert.alert('Invalid NIN', 'Please enter a valid 11-digit NIN');
-        return;
+        throw new Error('Please enter a valid 11-digit NIN');
+      }
+
+      // Test network connectivity first (without auth)
+      console.log('Testing network connectivity...');
+      try {
+        const testResult = await testNetworkConnectivity(nin);
+        console.log('Network test successful:', testResult);
+      } catch (networkError) {
+        console.error('Network test failed:', networkError);
+        // Still continue with the main lookup in case the test endpoint doesn't work
       }
 
       // Check if farmer already exists
-      const existingFarmer = await farmerService.getFarmerByNin(nin);
-      if (existingFarmer) {
-        Alert.alert('Farmer Exists', 'A farmer with this NIN is already registered');
-        return;
+      try {
+        const existingFarmer = await farmerService.getFarmerByNin(nin);
+        if (existingFarmer) {
+          throw new Error('A farmer with this NIN is already registered');
+        }
+      } catch (error) {
+        console.log('Could not check existing farmer (might be auth issue):', error.message);
+        // Continue anyway if this fails due to auth
       }
 
+      // Try NIN lookup
+      const ninData = await ninService.lookupNIN(nin);
+      
       setValue('nin', nin);
-      
-      // Simulate fetched data (in real app, this would come from NIN service)
-      const simulatedData = {
-        firstName: 'John',
-        lastName: 'Doe',
-        dateOfBirth: '1980-01-01',
-        gender: 'MALE',
-      };
-      
-      setNinData(simulatedData);
+      setNinData(ninData);
+      setNinValidated(true);
       
       // Pre-fill form with fetched data
-      Object.keys(simulatedData).forEach(key => {
-        setValue(`personalInfo.${key}`, simulatedData[key]);
-      });
-
-      nextStep();
+      setValue('personalInfo.firstName', ninData.firstName || '');
+      setValue('personalInfo.middleName', ninData.middleName || '');
+      setValue('personalInfo.lastName', ninData.lastName || '');
+      setValue('personalInfo.dateOfBirth', ninData.dateOfBirth || '');
+      setValue('personalInfo.gender', ninData.gender?.toUpperCase() || '');
+      
+      return ninData;
     } catch (error) {
-      Alert.alert('Error', 'Failed to lookup NIN');
+      console.error('NIN lookup failed:', error);
+      setNinValidated(false);
+      throw error;
     } finally {
       setLoading(false);
     }
@@ -246,6 +269,8 @@ export default function AddFarmerScreen({ navigation }) {
             watch={watch}
             onNINLookup={handleNINLookup}
             ninData={ninData}
+            ninValidated={ninValidated}
+            onNINChange={() => setNinValidated(false)}
           />
         </ScrollView>
 

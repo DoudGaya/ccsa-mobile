@@ -6,8 +6,8 @@ A comprehensive React Native mobile application for registering and managing far
 
 ### Authentication
 - **Agent Login**: Secure authentication for enrolment agents
-- **Supabase Integration**: User management and authentication
-- **JWT Token Management**: Secure API communication
+- **Firebase Integration**: User management and authentication
+- **Firebase Auth Tokens**: Secure API communication
 
 ### Farmer Registration
 - **Multi-step Registration Form**: Streamlined farmer onboarding
@@ -53,7 +53,7 @@ A comprehensive React Native mobile application for registering and managing far
 - **Framework**: Next.js 13+ with App Router
 - **Database**: PostgreSQL (NeonDB)
 - **ORM**: Prisma
-- **Authentication**: Supabase Auth + JWT
+- **Authentication**: Firebase Auth + Firebase Admin SDK
 - **API**: RESTful API with server actions
 - **Validation**: Zod schemas
 
@@ -130,12 +130,16 @@ src/
 Create a `.env` file in the root directory:
 
 ```env
-# Supabase Configuration
-SUPABASE_URL=your-supabase-url
-SUPABASE_ANON_KEY=your-supabase-anon-key
+# Firebase Configuration
+EXPO_PUBLIC_FIREBASE_API_KEY=your-firebase-api-key
+EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
+EXPO_PUBLIC_FIREBASE_PROJECT_ID=your-firebase-project-id
+EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
+EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
+EXPO_PUBLIC_FIREBASE_APP_ID=your-app-id
 
 # API Configuration
-API_BASE_URL=http://localhost:3000/api
+EXPO_PUBLIC_API_BASE_URL=http://localhost:3000/api
 ```
 
 Create a `.env` file in the backend directory:
@@ -144,15 +148,13 @@ Create a `.env` file in the backend directory:
 # Database
 DATABASE_URL=your-neondb-connection-string
 
-# Supabase
-SUPABASE_URL=your-supabase-url
-SUPABASE_SERVICE_KEY=your-supabase-service-key
-
-# JWT
-JWT_SECRET=your-jwt-secret
+# Firebase Admin SDK
+FIREBASE_PROJECT_ID=your-firebase-project-id
+FIREBASE_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\nyour-private-key\n-----END PRIVATE KEY-----\n"
+FIREBASE_CLIENT_EMAIL=firebase-adminsdk-xxxxx@your-project.iam.gserviceaccount.com
 
 # External APIs
-NIN_API_URL=https://api.nin.gov.ng
+NIN_API_URL=https://e-nvs.digitalpulseapi.net/api/lookup/nin
 NIN_API_KEY=your-nin-api-key
 ```
 

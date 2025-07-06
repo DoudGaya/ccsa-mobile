@@ -4,7 +4,6 @@ import { NavigationContainer } from '@react-navigation/native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-url-polyfill/auto';
 import AppNavigator from './src/navigation/AppNavigator';
-import { supabase } from './src/services/supabase';
 import { AuthProvider } from './src/store/AuthContext';
 
 export default function App() {
