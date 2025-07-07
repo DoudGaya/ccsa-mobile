@@ -118,7 +118,7 @@ export default function PersonalInfoStep({ control, errors }) {
 
         {/* Date of Birth */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Date of Birth *</Text>
+          <Text style={styles.label}>Date of Birth</Text>
           <Controller
             control={control}
             name="personalInfo.dateOfBirth"

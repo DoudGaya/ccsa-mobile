@@ -186,7 +186,13 @@ export default function AddFarmerScreen({ navigation }) {
       setLoading(true);
       
       console.log('=== FORM SUBMISSION START ===');
-      console.log('Form data being submitted:', JSON.stringify(data, null, 2));
+      console.log('Form data being submitted:');
+      console.log('- NIN:', data.nin);
+      console.log('- Personal Info:', JSON.stringify(data.personalInfo, null, 2));
+      console.log('- Contact Info:', JSON.stringify(data.contactInfo, null, 2));
+      console.log('- Bank Info:', JSON.stringify(data.bankInfo, null, 2));
+      console.log('- Referees:', JSON.stringify(data.referees, null, 2));
+      console.log('Raw form data:', JSON.stringify(data, null, 2));
       
       // Validate the complete form data before submission
       console.log('Validating complete form data...');
@@ -194,18 +200,21 @@ export default function AddFarmerScreen({ navigation }) {
       
       if (!validationResult.success) {
         console.log('❌ Form validation failed:');
-        validationResult.error.errors.forEach((error, index) => {
-          console.log(`  ${index + 1}. ${error.path.join('.')}: ${error.message}`);
+        const errorDetails = validationResult.error.errors.map((error, index) => {
+          const errorInfo = `${index + 1}. ${error.path.join('.')}: ${error.message}`;
+          console.log(`  ${errorInfo}`);
+          return errorInfo;
         });
         
         // Show detailed validation errors
-        const errorMessages = validationResult.error.errors.map(
-          (error) => `${error.path.join('.')}: ${error.message}`
-        );
+        const errorMessage = `Please fix the following errors:\n\n${errorDetails.slice(0, 5).join('\n')}${errorDetails.length > 5 ? '\n\n...and more' : ''}`;
+        
+        console.log('Full error message:', errorMessage);
         
         Alert.alert(
           'Validation Failed',
-          `Please fix the following errors:\n\n${errorMessages.slice(0, 5).join('\n')}${errorMessages.length > 5 ? '\n\n...and more' : ''}`
+          errorMessage,
+          [{ text: 'OK', onPress: () => console.log('User acknowledged validation errors') }]
         );
         return;
       }
@@ -214,20 +223,27 @@ export default function AddFarmerScreen({ navigation }) {
 
       // Check for unique fields
       console.log('Checking for duplicate fields...');
-      const conflicts = await farmerService.checkUniqueFields(
-        data.nin,
-        data.contactInfo.email,
-        data.contactInfo.phoneNumber,
-        data.bankInfo.bvn
-      );
-
-      if (conflicts.length > 0) {
-        console.log('❌ Duplicate fields found:', conflicts);
-        Alert.alert(
-          'Duplicate Data Found',
-          `The following fields are already registered: ${conflicts.join(', ')}`
+      try {
+        const conflicts = await farmerService.checkUniqueFields(
+          data.nin,
+          data.contactInfo.email,
+          data.contactInfo.phoneNumber,
+          data.bankInfo.bvn
         );
-        return;
+
+        if (conflicts.length > 0) {
+          console.log('❌ Duplicate fields found:', conflicts);
+          Alert.alert(
+            'Duplicate Data Found',
+            `A farmer is already registered with the following information:\n\n${conflicts.join('\n')}\n\nPlease check the records or contact support if this is an error.`,
+            [{ text: 'OK', style: 'default' }]
+          );
+          return;
+        }
+      } catch (error) {
+        console.log('Error checking duplicates:', error.message);
+        // If the duplicate check fails, we'll let the backend handle it
+        console.log('Proceeding with submission despite duplicate check failure...');
       }
       
       console.log('✅ No duplicate fields found');
@@ -235,6 +251,13 @@ export default function AddFarmerScreen({ navigation }) {
       console.log('Creating farmer...');
       const farmer = await addFarmer(data);
       console.log('✅ Farmer created successfully:', farmer);
+      console.log('Farmer structure:', {
+        id: farmer?.id,
+        firstName: farmer?.firstName,
+        lastName: farmer?.lastName,
+        nin: farmer?.nin,
+        keys: Object.keys(farmer || {})
+      });
       
       Alert.alert(
         'Success', 
@@ -242,11 +265,28 @@ export default function AddFarmerScreen({ navigation }) {
         [
           { 
             text: 'Add Farm', 
-            onPress: () => navigation.navigate('AddFarm', { farmerId: farmer.id, farmer }) 
+            onPress: () => {
+              // Reset form before navigation
+              console.log('Navigating to AddFarm with farmer:', farmer?.id);
+              console.log('Farmer data for navigation:', {
+                id: farmer?.id,
+                firstName: farmer?.firstName,
+                lastName: farmer?.lastName,
+                nin: farmer?.nin
+              });
+              navigation.navigate('AddFarm', { 
+                farmerId: farmer?.id, 
+                farmer: farmer 
+              });
+            }
           },
           { 
             text: 'Done', 
-            onPress: () => navigation.navigate('FarmersList') 
+            onPress: () => {
+              // Reset form before navigation
+              console.log('Navigating to FarmersList');
+              navigation.navigate('FarmersList');
+            }
           }
         ]
       );
@@ -257,7 +297,24 @@ export default function AddFarmerScreen({ navigation }) {
       console.error('Error details:', error.message);
       console.error('Error stack:', error.stack);
       
-      Alert.alert('Error', error.message || 'Failed to register farmer');
+      // Handle specific error types
+      let errorMessage = 'Failed to register farmer. Please try again.';
+      
+      if (error.message.includes('already exists') || error.message.includes('duplicate') || error.message.includes('unique constraint')) {
+        errorMessage = 'A farmer with this information already exists in the database. Please check the NIN, phone number, email, or BVN and try again.';
+      } else if (error.message.includes('network') || error.message.includes('timeout')) {
+        errorMessage = 'Network error. Please check your internet connection and try again.';
+      } else if (error.message.includes('authentication') || error.message.includes('unauthorized')) {
+        errorMessage = 'Authentication error. Please log out and log back in.';
+      } else if (error.message.includes('validation')) {
+        errorMessage = 'Please check that all required fields are filled correctly.';
+      }
+      
+      Alert.alert(
+        'Registration Failed', 
+        errorMessage,
+        [{ text: 'OK', style: 'default' }]
+      );
       console.log('=== FORM SUBMISSION ERROR ===');
     } finally {
       setLoading(false);

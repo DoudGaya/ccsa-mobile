@@ -41,21 +41,25 @@ export default authMiddleware(async function handler(req, res) {
         phone: true,
         email: true,
         bvn: true,
+        firstName: true,
+        lastName: true,
       },
     });
 
     if (existingFarmer) {
       const conflicts = [];
       if (nin && existingFarmer.nin === nin) conflicts.push('NIN');
-      if (phone && existingFarmer.phone === phone) conflicts.push('Phone');
+      if (phone && existingFarmer.phone === phone) conflicts.push('Phone number');
       if (email && existingFarmer.email === email) conflicts.push('Email');
       if (bvn && existingFarmer.bvn === bvn) conflicts.push('BVN');
 
       return res.status(409).json({
         error: 'Validation failed',
+        message: `A farmer is already registered with the following information: ${conflicts.join(', ')}`,
         conflicts,
         existingFarmer: {
           id: existingFarmer.id,
+          name: `${existingFarmer.firstName} ${existingFarmer.lastName}`,
           nin: existingFarmer.nin,
           phone: existingFarmer.phone,
           email: existingFarmer.email,

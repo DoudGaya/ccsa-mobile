@@ -20,8 +20,14 @@ const makeAuthenticatedRequest = async (url, options = {}) => {
   });
   
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Request failed');
+    const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+    console.log('API Error Response:', errorData);
+    
+    // Create a more detailed error
+    const error = new Error(errorData.message || errorData.error || 'Request failed');
+    error.status = response.status;
+    error.data = errorData;
+    throw error;
   }
   
   return response.json();
@@ -102,11 +108,20 @@ export const farmerService = {
       await makeAuthenticatedRequest(url);
       return []; // No conflicts
     } catch (error) {
-      if (error.message.includes('conflicts')) {
-        // Parse conflicts from error message
-        return ['Field already exists'];
+      console.log('Validation error response:', error.message);
+      
+      // Try to parse the error response for conflicts
+      try {
+        // If the error contains structured data about conflicts
+        if (error.message.includes('conflicts')) {
+          return ['Duplicate data found']; // Generic message for now
+        }
+      } catch (parseError) {
+        console.log('Could not parse conflict details:', parseError);
       }
-      throw error;
+      
+      // Return generic conflict message
+      return ['Field already exists'];
     }
   },
 };

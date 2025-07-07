@@ -151,11 +151,31 @@ async function createFarmer(req, res) {
           ...(farmerData.bvn ? [{ bvn: farmerData.bvn }] : []),
         ],
       },
+      select: {
+        nin: true,
+        phone: true,
+        email: true,
+        bvn: true,
+        firstName: true,
+        lastName: true,
+      },
     });
 
     if (existingFarmer) {
+      const conflicts = [];
+      if (existingFarmer.nin === farmerData.nin) conflicts.push('NIN');
+      if (existingFarmer.phone === farmerData.phone) conflicts.push('Phone number');
+      if (farmerData.email && existingFarmer.email === farmerData.email) conflicts.push('Email');
+      if (farmerData.bvn && existingFarmer.bvn === farmerData.bvn) conflicts.push('BVN');
+
       return res.status(409).json({ 
-        error: 'Farmer already exists with the same NIN, phone, email, or BVN' 
+        error: 'Farmer already exists',
+        message: `A farmer is already registered with the following information: ${conflicts.join(', ')}`,
+        conflicts: conflicts,
+        existingFarmer: {
+          name: `${existingFarmer.firstName} ${existingFarmer.lastName}`,
+          nin: existingFarmer.nin,
+        }
       });
     }
 

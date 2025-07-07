@@ -51,8 +51,20 @@ const farmSchema = z.object({
 });
 
 export default function AddFarmScreen({ navigation, route }) {
-  const { farmerId, farmer } = route.params;
+  const { farmerId, farmer } = route.params || {};
   const [loading, setLoading] = useState(false);
+
+  // Safety check for farmer data
+  React.useEffect(() => {
+    if (!farmerId || !farmer) {
+      console.error('Missing farmerId or farmer data in route params');
+      Alert.alert(
+        'Error',
+        'Missing farmer information. Returning to farmers list.',
+        [{ text: 'OK', onPress: () => navigation.navigate('FarmersList') }]
+      );
+    }
+  }, [farmerId, farmer, navigation]);
 
   const {
     control,
@@ -160,9 +172,9 @@ export default function AddFarmScreen({ navigation, route }) {
         <View style={styles.farmerSummary}>
           <Text style={styles.farmerSummaryTitle}>Adding farm for:</Text>
           <Text style={styles.farmerName}>
-            {farmer.firstName} {farmer.lastName}
+            {farmer?.firstName || 'Unknown'} {farmer?.lastName || 'Farmer'}
           </Text>
-          <Text style={styles.farmerNin}>NIN: {farmer.nin}</Text>
+          <Text style={styles.farmerNin}>NIN: {farmer?.nin || 'Unknown'}</Text>
         </View>
 
         {/* Form */}

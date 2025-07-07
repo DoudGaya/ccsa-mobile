@@ -25,11 +25,7 @@ export const personalInfoSchema = z.object({
   firstName: z.string().min(2, 'First name must be at least 2 characters'),
   middleName: z.string().optional(),
   lastName: z.string().min(2, 'Last name must be at least 2 characters'),
-  dateOfBirth: z.union([
-    z.string().min(1),
-    z.literal(''),
-    z.undefined(),
-  ]).optional(),
+  dateOfBirth: z.string().optional().transform(val => val === '' ? undefined : val),
   gender: z.enum(['M', 'F', 'MALE', 'FEMALE'], { required_error: 'Gender is required' }),
   maritalStatus: z.string().min(1, 'Marital status is required'),
   employmentStatus: z.string().min(1, 'Employment status is required'),

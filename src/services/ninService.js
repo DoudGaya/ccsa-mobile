@@ -247,10 +247,14 @@ export const ninService = {
       // Provide more specific error messages
       if (error.message === 'User not authenticated') {
         throw new Error('Please log in to continue');
-      } else if (error.message === 'Network request failed') {
-        throw new Error('Unable to connect to server. Please check your internet connection.');
+      } else if (error.message.includes('Network request failed')) {
+        throw new Error('Unable to connect to server. Please check your internet connection and server status.');
       } else if (error.message.includes('timeout')) {
-        throw new Error('Request timed out. Please try again.');
+        throw new Error('Request timed out. Please check your internet connection and try again.');
+      } else if (error.message.includes('fetch')) {
+        throw new Error('Network error occurred. Please check your internet connection.');
+      } else if (error.message.includes('Invalid token')) {
+        throw new Error('Authentication session expired. Please log out and log in again.');
       } else {
         throw error;
       }
@@ -269,15 +273,31 @@ export const testNetworkConnectivity = async (nin) => {
       headers: {
         'Content-Type': 'application/json',
       },
+      timeout: 10000, // 10 second timeout
     });
 
     console.log('Test response status:', response.status);
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
     const result = await response.json();
     console.log('Test response data:', result);
     
     return result;
   } catch (error) {
     console.error('Network test failed:', error);
+    
+    // Provide more specific error messages
+    if (error.message.includes('timeout')) {
+      throw new Error('Network request timed out. Please check your internet connection and try again.');
+    } else if (error.message.includes('Network request failed')) {
+      throw new Error('Unable to connect to server. Please check if the server is running and accessible.');
+    } else if (error.message.includes('fetch')) {
+      throw new Error('Network error occurred. Please check your internet connection.');
+    }
+    
     throw error;
   }
 };
