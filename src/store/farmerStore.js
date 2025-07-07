@@ -17,6 +17,7 @@ export const useFarmerStore = create((set, get) => ({
         farmers: [...state.farmers, newFarmer],
         loading: false,
       }));
+      return newFarmer; // Return the created farmer
     } catch (error) {
       set({ loading: false, error: error.message });
       throw error;

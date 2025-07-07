@@ -1,101 +1,112 @@
-import { supabase } from './supabase';
+import { auth } from './firebase';
+
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:3000/api';
+
+const getAuthToken = async () => {
+  const user = auth.currentUser;
+  if (!user) throw new Error('User not authenticated');
+  return await user.getIdToken();
+};
+
+const makeAuthenticatedRequest = async (url, options = {}) => {
+  const token = await getAuthToken();
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+      ...options.headers,
+    },
+  });
+  
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Request failed');
+  }
+  
+  return response.json();
+};
 
 export const farmerService = {
   async createFarmer(farmerData) {
-    const { data, error } = await supabase
-      .from('farmers')
-      .insert([farmerData])
-      .select()
-      .single();
-    
-    if (error) throw error;
+    const url = `${API_BASE_URL}/farmers`;
+    const data = await makeAuthenticatedRequest(url, {
+      method: 'POST',
+      body: JSON.stringify(farmerData),
+    });
     return data;
   },
 
-  async getFarmers() {
-    const { data, error } = await supabase
-      .from('farmers')
-      .select('*')
-      .order('created_at', { ascending: false });
+  async getFarmers(page = 1, limit = 10, search = '') {
+    const queryParams = new URLSearchParams({
+      page: page.toString(),
+      limit: limit.toString(),
+      ...(search && { search }),
+    });
     
-    if (error) throw error;
+    const url = `${API_BASE_URL}/farmers?${queryParams}`;
+    const data = await makeAuthenticatedRequest(url);
     return data;
   },
 
   async getFarmerById(id) {
-    const { data, error } = await supabase
-      .from('farmers')
-      .select('*')
-      .eq('id', id)
-      .single();
-    
-    if (error) throw error;
+    const url = `${API_BASE_URL}/farmers/${id}`;
+    const data = await makeAuthenticatedRequest(url);
     return data;
   },
 
   async getFarmerByNin(nin) {
-    const { data, error } = await supabase
-      .from('farmers')
-      .select('*')
-      .eq('nin', nin)
-      .single();
-    
-    if (error) {
-      if (error.code === 'PGRST116') {
-        return null; // No farmer found
-      }
-      throw error;
-    }
-    return data;
+    const url = `${API_BASE_URL}/farmers/search?query=${nin}&type=nin`;
+    const data = await makeAuthenticatedRequest(url);
+    return data.farmers?.[0] || null;
   },
 
-  async searchFarmers(query) {
-    const { data, error } = await supabase
-      .from('farmers')
-      .select('*')
-      .or(`nin.ilike.%${query}%,personal_info->>firstName.ilike.%${query}%,personal_info->>lastName.ilike.%${query}%,personal_info->>phoneNumber.ilike.%${query}%`);
+  async searchFarmers(query, type = 'all') {
+    const queryParams = new URLSearchParams({
+      query,
+      ...(type !== 'all' && { type }),
+    });
     
-    if (error) throw error;
-    return data;
+    const url = `${API_BASE_URL}/farmers/search?${queryParams}`;
+    const data = await makeAuthenticatedRequest(url);
+    return data.farmers || [];
   },
 
   async updateFarmer(id, updates) {
-    const { data, error } = await supabase
-      .from('farmers')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
-    
-    if (error) throw error;
+    const url = `${API_BASE_URL}/farmers/${id}`;
+    const data = await makeAuthenticatedRequest(url, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
     return data;
   },
 
   async deleteFarmer(id) {
-    const { error } = await supabase
-      .from('farmers')
-      .delete()
-      .eq('id', id);
-    
-    if (error) throw error;
+    const url = `${API_BASE_URL}/farmers/${id}`;
+    await makeAuthenticatedRequest(url, {
+      method: 'DELETE',
+    });
+    return { success: true };
   },
 
   async checkUniqueFields(nin, email, phone, bvn) {
-    const { data, error } = await supabase
-      .from('farmers')
-      .select('nin, personal_info, bank_info')
-      .or(`nin.eq.${nin},personal_info->>email.eq.${email},personal_info->>phoneNumber.eq.${phone},bank_info->>bvn.eq.${bvn}`);
-    
-    if (error) throw error;
-    
-    const conflicts = [];
-    data.forEach(farmer => {
-      if (farmer.nin === nin) conflicts.push('NIN');
-      if (farmer.personal_info?.email === email) conflicts.push('Email');
-      if (farmer.personal_info?.phoneNumber === phone) conflicts.push('Phone Number');
-      if (farmer.bank_info?.bvn === bvn) conflicts.push('BVN');
+    const queryParams = new URLSearchParams({
+      ...(nin && { nin }),
+      ...(email && { email }),
+      ...(phone && { phone }),
+      ...(bvn && { bvn }),
     });
     
-    return conflicts;
+    const url = `${API_BASE_URL}/farmers/validate?${queryParams}`;
+    try {
+      await makeAuthenticatedRequest(url);
+      return []; // No conflicts
+    } catch (error) {
+      if (error.message.includes('conflicts')) {
+        // Parse conflicts from error message
+        return ['Field already exists'];
+      }
+      throw error;
+    }
   },
 };

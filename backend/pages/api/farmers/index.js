@@ -49,6 +49,7 @@ async function getFarmers(req, res) {
         include: {
           referees: true,
           certificates: true,
+          farms: true,
           agent: {
             select: {
               id: true,
@@ -81,25 +82,73 @@ async function getFarmers(req, res) {
 
 async function createFarmer(req, res) {
   try {
-    const { referees, ...farmerData } = req.body;
+    const { nin, personalInfo, contactInfo, bankInfo, referees } = req.body;
 
-    // Validate farmer data
-    const validatedFarmer = farmerSchema.parse(farmerData);
-    
+    // Helper function to safely parse date
+    const parseDate = (dateString) => {
+      if (!dateString) return null;
+      
+      console.log(`Parsing date: "${dateString}"`);
+      
+      // Try to parse the date string
+      const date = new Date(dateString);
+      
+      // Check if the date is valid
+      if (isNaN(date.getTime())) {
+        console.warn(`Invalid date format: ${dateString}`);
+        return null;
+      }
+      
+      console.log(`Successfully parsed date: ${dateString} -> ${date.toISOString()}`);
+      return date;
+    };
+
+    // Flatten the nested structure for database storage
+    const farmerData = {
+      nin,
+      // Personal info from NIN
+      firstName: personalInfo.firstName,
+      middleName: personalInfo.middleName,
+      lastName: personalInfo.lastName,
+      dateOfBirth: parseDate(personalInfo.dateOfBirth),
+      gender: personalInfo.gender,
+      state: personalInfo.state || contactInfo.state,
+      lga: personalInfo.lga || contactInfo.localGovernment,
+      maritalStatus: personalInfo.maritalStatus,
+      employmentStatus: personalInfo.employmentStatus,
+      // Contact info (manual entry)
+      phone: contactInfo.phoneNumber,
+      email: contactInfo.email || null,
+      whatsAppNumber: contactInfo.whatsAppNumber || null,
+      address: contactInfo.address,
+      ward: contactInfo.ward,
+      latitude: contactInfo.coordinates?.latitude,
+      longitude: contactInfo.coordinates?.longitude,
+      // Bank info
+      bankName: bankInfo.bankName,
+      accountNumber: bankInfo.accountNumber,
+      bvn: bankInfo.bvn,
+    };
+
     // Validate referees if provided
     let validatedReferees = [];
     if (referees && referees.length > 0) {
-      validatedReferees = referees.map(referee => refereeSchema.parse(referee));
+      validatedReferees = referees.map(referee => ({
+        firstName: referee.fullName.split(' ')[0] || '',
+        lastName: referee.fullName.split(' ').slice(1).join(' ') || '',
+        phone: referee.phoneNumber,
+        relationship: referee.relation,
+      }));
     }
 
     // Check for unique constraints
     const existingFarmer = await prisma.farmer.findFirst({
       where: {
         OR: [
-          { nin: validatedFarmer.nin },
-          { phone: validatedFarmer.phone },
-          ...(validatedFarmer.email ? [{ email: validatedFarmer.email }] : []),
-          ...(validatedFarmer.bvn ? [{ bvn: validatedFarmer.bvn }] : []),
+          { nin: farmerData.nin },
+          { phone: farmerData.phone },
+          ...(farmerData.email ? [{ email: farmerData.email }] : []),
+          ...(farmerData.bvn ? [{ bvn: farmerData.bvn }] : []),
         ],
       },
     });
@@ -111,9 +160,18 @@ async function createFarmer(req, res) {
     }
 
     // Create farmer with referees
+    console.log('Creating farmer with agentId:', req.user.id);
+    console.log('Farmer data preview:', {
+      nin: farmerData.nin,
+      firstName: farmerData.firstName,
+      lastName: farmerData.lastName,
+      phone: farmerData.phone,
+      agentId: req.user.id,
+    });
+    
     const farmer = await prisma.farmer.create({
       data: {
-        ...validatedFarmer,
+        ...farmerData,
         agentId: req.user.id,
         referees: {
           create: validatedReferees,
@@ -121,6 +179,7 @@ async function createFarmer(req, res) {
       },
       include: {
         referees: true,
+        farms: true,
         agent: {
           select: {
             id: true,
@@ -135,10 +194,9 @@ async function createFarmer(req, res) {
   } catch (error) {
     console.error('Error creating farmer:', error);
     
-    if (error.name === 'ZodError') {
-      return res.status(400).json({ 
-        error: 'Validation error', 
-        details: error.errors 
+    if (error.code === 'P2002') {
+      return res.status(409).json({ 
+        error: 'A farmer with this information already exists' 
       });
     }
     

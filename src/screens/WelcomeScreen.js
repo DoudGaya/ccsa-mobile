@@ -18,7 +18,7 @@ export default function WelcomeScreen({ navigation }) {
           <View style={styles.logoContainer}>
             <Ionicons name="leaf" size={80} color="#10b981" />
           </View>
-          <Text style={styles.title}>FIMS</Text>
+          <Text style={styles.title}>CCSA FIMS</Text>
           <Text style={styles.subtitle}>
             Farmers Information Management System
           </Text>

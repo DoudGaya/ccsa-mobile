@@ -10,7 +10,7 @@ This is a React Native Farmers Information Management System (FIMS) for Nigerian
 - **Backend**: Next.js with server actions
 - **Database**: NeonDB (PostgreSQL)
 - **ORM**: Prisma
-- **Authentication**: Supabase Auth
+- **Authentication**: Firebase Auth
 - **State Management**: Zustand
 - **Forms**: React Hook Form + Zod validation
 - **Navigation**: React Navigation (Stack + Bottom Tabs + Drawer)

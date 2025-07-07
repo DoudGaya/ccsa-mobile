@@ -5,6 +5,7 @@ generator client {
   provider = "prisma-client-js"
 }
 
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -27,38 +28,33 @@ model User {
 model Farmer {
   id                String    @id @default(cuid())
   
-  // Personal Information
+  // Personal Information (from NIN API)
   nin               String    @unique
   firstName         String
   middleName        String?
   lastName          String
   dateOfBirth       DateTime?
   gender            String?
+  state             String?   // birthstate from NIN API
+  lga               String?   // birthlga from NIN API
+  maritalStatus     String?
+  employmentStatus  String?
+  
+  // Contact Information (manual entry)
   phone             String    @unique
   email             String?   @unique
-  maritalStatus     String?
+  whatsAppNumber    String?
   
-  // Address Information
+  // Address Information (manual entry)
   address           String?
-  state             String?
-  lga               String?
   ward              String?
   latitude          Float?
   longitude         Float?
   
-  // Bank Information
+  // Bank Information (manual entry)
   bankName          String?
   accountNumber     String?
   bvn               String?   @unique
-  
-  // Farm Information
-  farmSize          Float?
-  primaryCrop       String?
-  secondaryCrop     String?
-  farmingExperience Int?
-  farmLatitude      Float?
-  farmLongitude     Float?
-  farmPolygon       Json?
   
   // System Information
   registrationDate  DateTime  @default(now())
@@ -71,8 +67,56 @@ model Farmer {
   agent             User?     @relation(fields: [agentId], references: [id])
   referees          Referee[]
   certificates      Certificate[]
+  farms             Farm[]    // One farmer can have multiple farms
   
   @@map("farmers")
+}
+
+model Farm {
+  id                  String    @id @default(cuid())
+  
+  // Farm Basic Information
+  farmSize            Float?
+  primaryCrop         String?
+  produceCategory     String?
+  farmOwnership       String?
+  farmState           String?
+  farmLocalGovernment String?
+  farmingSeason       String?
+  farmWard            String?
+  farmPollingUnit     String?
+  secondaryCrop       String?
+  farmingExperience   Int?
+  farmLatitude        Float?
+  farmLongitude       Float?
+  farmPolygon         Json?
+
+  // Farm Soil Information
+  soilType           String?
+  soilPH             Float?
+  soilFertility      String?
+
+  // Farm Geospatial Information
+  farmCoordinates    Json?     // GeoJSON format for farm boundaries
+  coordinateSystem   String?   // Coordinate system used (e.g., WGS84)
+  farmArea           Float?    // Area in square meters or hectares
+  farmElevation      Float?    // Elevation in meters above sea level
+
+  // Farm Yield Information
+  year               Float?
+  yieldSeason        String?
+  crop               Float?
+  quantity           Float?
+  
+  // System Information
+  farmerId           String
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  
+  // Relationships
+  farmer             Farmer    @relation(fields: [farmerId], references: [id], onDelete: Cascade)
+  
+  @@map("farms")
 }
 
 model Referee {
@@ -115,7 +159,6 @@ model Analytics {
   value         Json
   date          DateTime @default(now())
   createdAt     DateTime @default(now())
-  
   @@map("analytics")
 }
 
@@ -128,6 +171,5 @@ model AuditLog {
   newValues Json?
   userId    String?
   timestamp DateTime @default(now())
-  
   @@map("audit_logs")
 }

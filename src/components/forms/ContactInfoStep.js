@@ -7,7 +7,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Controller } from 'react-hook-form';
-import { Picker } from '@react-native-picker/picker';
+import CustomSelect from '../common/CustomSelect';
 
 // Nigerian states
 const NIGERIAN_STATES = [
@@ -73,6 +73,84 @@ export default function ContactInfoStep({ control, errors }) {
       </View>
 
       <View style={styles.form}>
+        {/* Phone Number */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Phone Number *</Text>
+          <Controller
+            control={control}
+            name="contactInfo.phoneNumber"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <View style={styles.inputContainer}>
+                <Ionicons name="call-outline" size={20} color="#9ca3af" style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, errors.contactInfo?.phoneNumber && styles.inputError]}
+                  placeholder="e.g., 08012345678"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  keyboardType="phone-pad"
+                  maxLength={11}
+                />
+              </View>
+            )}
+          />
+          {errors.contactInfo?.phoneNumber && (
+            <Text style={styles.errorText}>{errors.contactInfo.phoneNumber.message}</Text>
+          )}
+        </View>
+
+        {/* WhatsApp Number */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>WhatsApp Number</Text>
+          <Controller
+            control={control}
+            name="contactInfo.whatsAppNumber"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <View style={styles.inputContainer}>
+                <Ionicons name="logo-whatsapp" size={20} color="#9ca3af" style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, errors.contactInfo?.whatsAppNumber && styles.inputError]}
+                  placeholder="e.g., 08012345678 (optional)"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  keyboardType="phone-pad"
+                  maxLength={11}
+                />
+              </View>
+            )}
+          />
+          {errors.contactInfo?.whatsAppNumber && (
+            <Text style={styles.errorText}>{errors.contactInfo.whatsAppNumber.message}</Text>
+          )}
+        </View>
+
+        {/* Email */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Email Address</Text>
+          <Controller
+            control={control}
+            name="contactInfo.email"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <View style={styles.inputContainer}>
+                <Ionicons name="mail-outline" size={20} color="#9ca3af" style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, errors.contactInfo?.email && styles.inputError]}
+                  placeholder="farmer@example.com (optional)"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                />
+              </View>
+            )}
+          />
+          {errors.contactInfo?.email && (
+            <Text style={styles.errorText}>{errors.contactInfo.email.message}</Text>
+          )}
+        </View>
+
         {/* Address */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Address *</Text>
@@ -107,21 +185,13 @@ export default function ContactInfoStep({ control, errors }) {
             control={control}
             name="contactInfo.state"
             render={({ field: { onChange, value } }) => (
-              <View style={[styles.pickerContainer, errors.contactInfo?.state && styles.inputError]}>
-                <Picker
-                  selectedValue={value}
-                  onValueChange={onChange}
-                  style={styles.picker}
-                >
-                  {NIGERIAN_STATES.map((option) => (
-                    <Picker.Item
-                      key={option.value}
-                      label={option.label}
-                      value={option.value}
-                    />
-                  ))}
-                </Picker>
-              </View>
+              <CustomSelect
+                options={NIGERIAN_STATES}
+                selectedValue={value}
+                onValueChange={onChange}
+                placeholder="Select State"
+                error={!!errors.contactInfo?.state}
+              />
             )}
           />
           {errors.contactInfo?.state && (
@@ -181,7 +251,7 @@ export default function ContactInfoStep({ control, errors }) {
 
         {/* Polling Unit */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Polling Unit *</Text>
+          <Text style={styles.label}>Polling Unit</Text>
           <Controller
             control={control}
             name="contactInfo.pollingUnit"
@@ -190,7 +260,7 @@ export default function ContactInfoStep({ control, errors }) {
                 <Ionicons name="checkbox-outline" size={20} color="#9ca3af" style={styles.inputIcon} />
                 <TextInput
                   style={[styles.input, errors.contactInfo?.pollingUnit && styles.inputError]}
-                  placeholder="Enter Polling Unit"
+                  placeholder="Enter Polling Unit (optional)"
                   value={value}
                   onChangeText={onChange}
                   onBlur={onBlur}
@@ -206,26 +276,18 @@ export default function ContactInfoStep({ control, errors }) {
 
         {/* Cluster */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Cluster *</Text>
+          <Text style={styles.label}>Cluster</Text>
           <Controller
             control={control}
             name="contactInfo.cluster"
             render={({ field: { onChange, value } }) => (
-              <View style={[styles.pickerContainer, errors.contactInfo?.cluster && styles.inputError]}>
-                <Picker
-                  selectedValue={value}
-                  onValueChange={onChange}
-                  style={styles.picker}
-                >
-                  {SAMPLE_CLUSTERS.map((option) => (
-                    <Picker.Item
-                      key={option.value}
-                      label={option.label}
-                      value={option.value}
-                    />
-                  ))}
-                </Picker>
-              </View>
+              <CustomSelect
+                options={SAMPLE_CLUSTERS}
+                selectedValue={value}
+                onValueChange={onChange}
+                placeholder="Select Cluster (optional)"
+                error={!!errors.contactInfo?.cluster}
+              />
             )}
           />
           {errors.contactInfo?.cluster && (
@@ -299,15 +361,6 @@ const styles = StyleSheet.create({
   },
   inputError: {
     borderColor: '#ef4444',
-  },
-  pickerContainer: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 12,
-    backgroundColor: '#f9fafb',
-  },
-  picker: {
-    height: 50,
   },
   errorText: {
     fontSize: 14,

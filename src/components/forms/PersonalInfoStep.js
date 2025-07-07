@@ -7,7 +7,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Controller } from 'react-hook-form';
-import { Picker } from '@react-native-picker/picker';
+import CustomSelect from '../common/CustomSelect';
 
 const GENDER_OPTIONS = [
   { label: 'Select Gender', value: '' },
@@ -22,15 +22,6 @@ const EMPLOYMENT_STATUS_OPTIONS = [
   { label: 'Unemployed', value: 'UNEMPLOYED' },
   { label: 'Student', value: 'STUDENT' },
   { label: 'Retired', value: 'RETIRED' },
-];
-
-const QUALIFICATION_OPTIONS = [
-  { label: 'Select Highest Qualification', value: '' },
-  { label: 'No Formal Education', value: 'NONE' },
-  { label: 'Primary Education', value: 'PRIMARY' },
-  { label: 'Secondary Education', value: 'SECONDARY' },
-  { label: 'Tertiary Education', value: 'TERTIARY' },
-  { label: 'Vocational Training', value: 'VOCATIONAL' },
 ];
 
 const MARITAL_STATUS_OPTIONS = [
@@ -156,101 +147,18 @@ export default function PersonalInfoStep({ control, errors }) {
             control={control}
             name="personalInfo.gender"
             render={({ field: { onChange, value } }) => (
-              <View style={[styles.pickerContainer, errors.personalInfo?.gender && styles.inputError]}>
-                <Picker
-                  selectedValue={value}
-                  onValueChange={onChange}
-                  style={styles.picker}
-                >
-                  {GENDER_OPTIONS.map((option) => (
-                    <Picker.Item
-                      key={option.value}
-                      label={option.label}
-                      value={option.value}
-                    />
-                  ))}
-                </Picker>
-              </View>
+              <CustomSelect
+                options={GENDER_OPTIONS}
+                selectedValue={value}
+                onValueChange={onChange}
+                placeholder="Select Gender"
+                error={!!errors.personalInfo?.gender}
+              />
             )}
           />
           {errors.personalInfo?.gender && (
             <Text style={styles.errorText}>{errors.personalInfo.gender.message}</Text>
           )}
-        </View>
-
-        {/* Email */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Email Address *</Text>
-          <Controller
-            control={control}
-            name="personalInfo.email"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <View style={styles.inputContainer}>
-                <Ionicons name="mail-outline" size={20} color="#9ca3af" style={styles.inputIcon} />
-                <TextInput
-                  style={[styles.input, errors.personalInfo?.email && styles.inputError]}
-                  placeholder="Enter email address"
-                  value={value}
-                  onChangeText={onChange}
-                  onBlur={onBlur}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
-              </View>
-            )}
-          />
-          {errors.personalInfo?.email && (
-            <Text style={styles.errorText}>{errors.personalInfo.email.message}</Text>
-          )}
-        </View>
-
-        {/* Phone Number */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Phone Number *</Text>
-          <Controller
-            control={control}
-            name="personalInfo.phoneNumber"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <View style={styles.inputContainer}>
-                <Ionicons name="call-outline" size={20} color="#9ca3af" style={styles.inputIcon} />
-                <TextInput
-                  style={[styles.input, errors.personalInfo?.phoneNumber && styles.inputError]}
-                  placeholder="08012345678"
-                  value={value}
-                  onChangeText={onChange}
-                  onBlur={onBlur}
-                  keyboardType="phone-pad"
-                  maxLength={11}
-                />
-              </View>
-            )}
-          />
-          {errors.personalInfo?.phoneNumber && (
-            <Text style={styles.errorText}>{errors.personalInfo.phoneNumber.message}</Text>
-          )}
-        </View>
-
-        {/* WhatsApp Number */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>WhatsApp Number</Text>
-          <Controller
-            control={control}
-            name="personalInfo.whatsAppNumber"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <View style={styles.inputContainer}>
-                <Ionicons name="logo-whatsapp" size={20} color="#9ca3af" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="08012345678 (optional)"
-                  value={value}
-                  onChangeText={onChange}
-                  onBlur={onBlur}
-                  keyboardType="phone-pad"
-                  maxLength={11}
-                />
-              </View>
-            )}
-          />
         </View>
 
         {/* Employment Status */}
@@ -260,54 +168,17 @@ export default function PersonalInfoStep({ control, errors }) {
             control={control}
             name="personalInfo.employmentStatus"
             render={({ field: { onChange, value } }) => (
-              <View style={[styles.pickerContainer, errors.personalInfo?.employmentStatus && styles.inputError]}>
-                <Picker
-                  selectedValue={value}
-                  onValueChange={onChange}
-                  style={styles.picker}
-                >
-                  {EMPLOYMENT_STATUS_OPTIONS.map((option) => (
-                    <Picker.Item
-                      key={option.value}
-                      label={option.label}
-                      value={option.value}
-                    />
-                  ))}
-                </Picker>
-              </View>
+              <CustomSelect
+                options={EMPLOYMENT_STATUS_OPTIONS}
+                selectedValue={value}
+                onValueChange={onChange}
+                placeholder="Select Employment Status"
+                error={!!errors.personalInfo?.employmentStatus}
+              />
             )}
           />
           {errors.personalInfo?.employmentStatus && (
             <Text style={styles.errorText}>{errors.personalInfo.employmentStatus.message}</Text>
-          )}
-        </View>
-
-        {/* Highest Qualification */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Highest Qualification *</Text>
-          <Controller
-            control={control}
-            name="personalInfo.highestQualification"
-            render={({ field: { onChange, value } }) => (
-              <View style={[styles.pickerContainer, errors.personalInfo?.highestQualification && styles.inputError]}>
-                <Picker
-                  selectedValue={value}
-                  onValueChange={onChange}
-                  style={styles.picker}
-                >
-                  {QUALIFICATION_OPTIONS.map((option) => (
-                    <Picker.Item
-                      key={option.value}
-                      label={option.label}
-                      value={option.value}
-                    />
-                  ))}
-                </Picker>
-              </View>
-            )}
-          />
-          {errors.personalInfo?.highestQualification && (
-            <Text style={styles.errorText}>{errors.personalInfo.highestQualification.message}</Text>
           )}
         </View>
 
@@ -318,21 +189,13 @@ export default function PersonalInfoStep({ control, errors }) {
             control={control}
             name="personalInfo.maritalStatus"
             render={({ field: { onChange, value } }) => (
-              <View style={[styles.pickerContainer, errors.personalInfo?.maritalStatus && styles.inputError]}>
-                <Picker
-                  selectedValue={value}
-                  onValueChange={onChange}
-                  style={styles.picker}
-                >
-                  {MARITAL_STATUS_OPTIONS.map((option) => (
-                    <Picker.Item
-                      key={option.value}
-                      label={option.label}
-                      value={option.value}
-                    />
-                  ))}
-                </Picker>
-              </View>
+              <CustomSelect
+                options={MARITAL_STATUS_OPTIONS}
+                selectedValue={value}
+                onValueChange={onChange}
+                placeholder="Select Marital Status"
+                error={!!errors.personalInfo?.maritalStatus}
+              />
             )}
           />
           {errors.personalInfo?.maritalStatus && (
@@ -396,15 +259,6 @@ const styles = StyleSheet.create({
   },
   inputError: {
     borderColor: '#ef4444',
-  },
-  pickerContainer: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 12,
-    backgroundColor: '#f9fafb',
-  },
-  picker: {
-    height: 50,
   },
   errorText: {
     fontSize: 14,
