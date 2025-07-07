@@ -7,7 +7,7 @@ A comprehensive React Native mobile application for registering and managing far
 ### Authentication
 - **Agent Login**: Secure authentication for enrolment agents
 - **Supabase Integration**: User management and authentication
-- **JWT Token Management**: Secure API communication
+- **JWT Token Management**: Secure API communication 5877463302 | garba lawan
 
 ### Farmer Registration
 - **Multi-step Registration Form**: Streamlined farmer onboarding
