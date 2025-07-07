@@ -25,24 +25,45 @@ export const personalInfoSchema = z.object({
   firstName: z.string().min(2, 'First name must be at least 2 characters'),
   middleName: z.string().optional(),
   lastName: z.string().min(2, 'Last name must be at least 2 characters'),
-  dateOfBirth: z.string().min(1, 'Date of birth is required'),
-  gender: z.enum(['MALE', 'FEMALE'], { required_error: 'Gender is required' }),
-  email: z.string().email('Invalid email format'),
-  phoneNumber: phoneSchema,
-  whatsAppNumber: phoneSchema.optional().or(z.literal('')),
-  employmentStatus: z.string().min(1, 'Employment status is required'),
-  highestQualification: z.string().min(1, 'Highest qualification is required'),
+  dateOfBirth: z.union([
+    z.string().min(1),
+    z.literal(''),
+    z.undefined(),
+  ]).optional(),
+  gender: z.enum(['M', 'F', 'MALE', 'FEMALE'], { required_error: 'Gender is required' }),
   maritalStatus: z.string().min(1, 'Marital status is required'),
+  employmentStatus: z.string().min(1, 'Employment status is required'),
+  state: z.string().optional(),
+  lga: z.string().optional(),
 });
 
 // Contact info schema
 export const contactInfoSchema = z.object({
+  phoneNumber: phoneSchema,
+  whatsAppNumber: z.union([
+    phoneSchema,
+    z.literal(''),
+    z.undefined(),
+  ]).optional(),
+  email: z.union([
+    z.string().email('Invalid email format'),
+    z.literal(''),
+    z.undefined(),
+  ]).optional(),
   address: z.string().min(5, 'Address must be at least 5 characters'),
   state: z.string().min(1, 'State is required'),
   localGovernment: z.string().min(1, 'Local Government is required'),
   ward: z.string().min(1, 'Ward is required'),
-  pollingUnit: z.string().min(1, 'Polling Unit is required'),
-  cluster: z.string().min(1, 'Cluster is required'),
+  pollingUnit: z.string().optional(),
+  cluster: z.string().optional(),
+  coordinates: z.union([
+    z.object({
+      latitude: z.number(),
+      longitude: z.number(),
+    }),
+    z.null(),
+    z.undefined(),
+  ]).optional(),
 });
 
 // Bank info schema
@@ -91,7 +112,6 @@ export const farmerSchema = z.object({
   contactInfo: contactInfoSchema,
   bankInfo: bankInfoSchema,
   referees: z.array(refereeSchema).min(1, 'At least one referee is required').max(3, 'Maximum 3 referees allowed'),
-  farmInfo: farmInfoSchema.optional(),
 });
 
 // Login schema

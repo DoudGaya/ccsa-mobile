@@ -19,6 +19,8 @@ import { useFarmerStore } from '../store/farmerStore';
 import { farmerService } from '../services/farmerService';
 import { ninService, testNetworkConnectivity } from '../services/ninService';
 import LoadingScreen from './LoadingScreen';
+import { useAuth } from '../store/AuthContext';
+import { auth } from '../services/firebase';
 
 // Import form steps
 import NINLookupStep from '../components/forms/NINLookupStep';
@@ -34,7 +36,6 @@ const STEPS = [
   { id: 3, title: 'Contact Info', component: ContactInfoStep },
   { id: 4, title: 'Bank Info', component: BankInfoStep },
   { id: 5, title: 'Referees', component: RefereeInfoStep },
-  { id: 6, title: 'Farm Info', component: FarmInfoStep },
 ];
 
 export default function AddFarmerScreen({ navigation }) {
@@ -43,6 +44,7 @@ export default function AddFarmerScreen({ navigation }) {
   const [ninData, setNinData] = useState(null);
   const [ninValidated, setNinValidated] = useState(false);
   const { addFarmer } = useFarmerStore();
+  const { user } = useAuth();
 
   const {
     control,
@@ -61,20 +63,22 @@ export default function AddFarmerScreen({ navigation }) {
         lastName: '',
         dateOfBirth: '',
         gender: '',
-        email: '',
-        phoneNumber: '',
-        whatsAppNumber: '',
-        employmentStatus: '',
-        highestQualification: '',
         maritalStatus: '',
+        employmentStatus: '',
+        state: '',
+        lga: '',
       },
       contactInfo: {
+        phoneNumber: '',
+        whatsAppNumber: '',
+        email: '',
         address: '',
         state: '',
         localGovernment: '',
         ward: '',
         pollingUnit: '',
         cluster: '',
+        coordinates: null,
       },
       bankInfo: {
         bvn: '',
@@ -85,22 +89,6 @@ export default function AddFarmerScreen({ navigation }) {
       referees: [
         { fullName: '', phoneNumber: '', relation: '' },
       ],
-      farmInfo: {
-        farmLocation: '',
-        farmSize: '',
-        farmCategory: '',
-        landforms: '',
-        farmOwnership: '',
-        farmState: '',
-        farmLocalGovt: '',
-        farmWard: '',
-        farmPollingUnit: '',
-        primaryCrop: '',
-        secondaryCrop: '',
-        farmSeason: '',
-        coordinates: null,
-        farmPolygon: [],
-      },
     },
   });
 
@@ -115,13 +103,65 @@ export default function AddFarmerScreen({ navigation }) {
     }
 
     const fieldsToValidate = getFieldsForStep(currentStep);
+    console.log(`=== STEP ${currentStep} VALIDATION START ===`);
+    console.log('Fields to validate:', fieldsToValidate);
+    
+    // Get current form data for debugging
+    const formData = watch();
+    console.log('Current form data:', JSON.stringify(formData, null, 2));
+    
     const isValid = await trigger(fieldsToValidate);
     
     if (isValid) {
+      console.log(`✅ Step ${currentStep} validation passed`);
       if (currentStep < STEPS.length) {
         setCurrentStep(currentStep + 1);
       }
+    } else {
+      console.log(`❌ Step ${currentStep} validation failed`);
+      console.log('Current errors:', JSON.stringify(errors, null, 2));
+      
+      // Get specific errors for this step
+      const stepErrors = [];
+      fieldsToValidate.forEach(field => {
+        const fieldPath = field.split('.');
+        let currentError = errors;
+        
+        for (const path of fieldPath) {
+          if (currentError && currentError[path]) {
+            currentError = currentError[path];
+          } else {
+            currentError = null;
+            break;
+          }
+        }
+        
+        if (currentError) {
+          if (typeof currentError === 'object' && currentError.message) {
+            stepErrors.push(`${field}: ${currentError.message}`);
+          } else if (typeof currentError === 'object') {
+            // Handle nested errors
+            Object.keys(currentError).forEach(key => {
+              if (currentError[key] && currentError[key].message) {
+                stepErrors.push(`${field}.${key}: ${currentError[key].message}`);
+              }
+            });
+          }
+        }
+      });
+      
+      console.log('Step errors:', stepErrors);
+      
+      // Show specific error message
+      const stepName = STEPS[currentStep - 1].title;
+      const errorMessage = stepErrors.length > 0 
+        ? `Please fix the following errors:\n\n${stepErrors.slice(0, 3).join('\n')}${stepErrors.length > 3 ? '\n\n...and more' : ''}`
+        : `Please fill in all required fields in the ${stepName} section before proceeding.`;
+      
+      Alert.alert('Validation Error', errorMessage);
     }
+    
+    console.log(`=== STEP ${currentStep} VALIDATION END ===`);
   };
 
   const prevStep = () => {
@@ -137,7 +177,6 @@ export default function AddFarmerScreen({ navigation }) {
       case 3: return ['contactInfo'];
       case 4: return ['bankInfo'];
       case 5: return ['referees'];
-      case 6: return ['farmInfo'];
       default: return [];
     }
   };
@@ -145,29 +184,81 @@ export default function AddFarmerScreen({ navigation }) {
   const onSubmit = async (data) => {
     try {
       setLoading(true);
+      
+      console.log('=== FORM SUBMISSION START ===');
+      console.log('Form data being submitted:', JSON.stringify(data, null, 2));
+      
+      // Validate the complete form data before submission
+      console.log('Validating complete form data...');
+      const validationResult = farmerSchema.safeParse(data);
+      
+      if (!validationResult.success) {
+        console.log('❌ Form validation failed:');
+        validationResult.error.errors.forEach((error, index) => {
+          console.log(`  ${index + 1}. ${error.path.join('.')}: ${error.message}`);
+        });
+        
+        // Show detailed validation errors
+        const errorMessages = validationResult.error.errors.map(
+          (error) => `${error.path.join('.')}: ${error.message}`
+        );
+        
+        Alert.alert(
+          'Validation Failed',
+          `Please fix the following errors:\n\n${errorMessages.slice(0, 5).join('\n')}${errorMessages.length > 5 ? '\n\n...and more' : ''}`
+        );
+        return;
+      }
+      
+      console.log('✅ Form validation passed');
 
       // Check for unique fields
+      console.log('Checking for duplicate fields...');
       const conflicts = await farmerService.checkUniqueFields(
         data.nin,
-        data.personalInfo.email,
-        data.personalInfo.phoneNumber,
+        data.contactInfo.email,
+        data.contactInfo.phoneNumber,
         data.bankInfo.bvn
       );
 
       if (conflicts.length > 0) {
+        console.log('❌ Duplicate fields found:', conflicts);
         Alert.alert(
           'Duplicate Data Found',
           `The following fields are already registered: ${conflicts.join(', ')}`
         );
         return;
       }
+      
+      console.log('✅ No duplicate fields found');
 
-      await addFarmer(data);
-      Alert.alert('Success', 'Farmer registered successfully!', [
-        { text: 'OK', onPress: () => navigation.navigate('FarmersList') }
-      ]);
+      console.log('Creating farmer...');
+      const farmer = await addFarmer(data);
+      console.log('✅ Farmer created successfully:', farmer);
+      
+      Alert.alert(
+        'Success', 
+        'Farmer registered successfully!',
+        [
+          { 
+            text: 'Add Farm', 
+            onPress: () => navigation.navigate('AddFarm', { farmerId: farmer.id, farmer }) 
+          },
+          { 
+            text: 'Done', 
+            onPress: () => navigation.navigate('FarmersList') 
+          }
+        ]
+      );
+      
+      console.log('=== FORM SUBMISSION SUCCESS ===');
     } catch (error) {
+      console.error('❌ Form submission error:', error);
+      console.error('Error details:', error.message);
+      console.error('Error stack:', error.stack);
+      
       Alert.alert('Error', error.message || 'Failed to register farmer');
+      console.log('=== FORM SUBMISSION ERROR ===');
     } finally {
       setLoading(false);
     }
@@ -176,6 +267,21 @@ export default function AddFarmerScreen({ navigation }) {
   const handleNINLookup = async (nin) => {
     try {
       setLoading(true);
+      
+      // Debug authentication state
+      console.log('=== AUTH DEBUG START ===');
+      console.log('Current user from context:', user ? user.email : 'No user');
+      console.log('Firebase current user:', auth.currentUser ? auth.currentUser.email : 'No Firebase user');
+      
+      if (auth.currentUser) {
+        try {
+          const token = await auth.currentUser.getIdToken(true);
+          console.log('Token refresh successful, length:', token.length);
+        } catch (tokenError) {
+          console.error('Token refresh failed:', tokenError);
+        }
+      }
+      console.log('=== AUTH DEBUG END ===');
       
       // Validate NIN format first
       const ninValidation = ninSchema.safeParse(nin);
@@ -211,12 +317,20 @@ export default function AddFarmerScreen({ navigation }) {
       setNinData(ninData);
       setNinValidated(true);
       
-      // Pre-fill form with fetched data
+      // Pre-fill form with fetched data (mapping from NIN API structure)
       setValue('personalInfo.firstName', ninData.firstName || '');
       setValue('personalInfo.middleName', ninData.middleName || '');
       setValue('personalInfo.lastName', ninData.lastName || '');
       setValue('personalInfo.dateOfBirth', ninData.dateOfBirth || '');
       setValue('personalInfo.gender', ninData.gender?.toUpperCase() || '');
+      setValue('personalInfo.maritalStatus', ninData.maritalStatus || '');
+      setValue('personalInfo.employmentStatus', ninData.employmentStatus || '');
+      
+      // Address information from NIN data (set both personalInfo and contactInfo)
+      setValue('personalInfo.state', ninData.state || '');
+      setValue('personalInfo.lga', ninData.lga || '');
+      setValue('contactInfo.state', ninData.state || '');
+      setValue('contactInfo.localGovernment', ninData.lga || '');
       
       return ninData;
     } catch (error) {
@@ -227,6 +341,21 @@ export default function AddFarmerScreen({ navigation }) {
       setLoading(false);
     }
   };
+
+  // Debugging: Check if user is authenticated
+  React.useEffect(() => {
+    const checkAuth = () => {
+      if (!user) {
+        console.log('User is not authenticated');
+        Alert.alert('Authentication Required', 'You must be logged in to add a farmer.');
+        navigation.navigate('Login');
+      } else {
+        console.log('User is authenticated:', user);
+      }
+    };
+
+    checkAuth();
+  }, [user, navigation]);
 
   if (loading && currentStep === 1) {
     return <LoadingScreen message="Looking up NIN..." />;

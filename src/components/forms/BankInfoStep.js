@@ -7,7 +7,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Controller } from 'react-hook-form';
-import { Picker } from '@react-native-picker/picker';
+import CustomSelect from '../common/CustomSelect';
 
 // Nigerian Banks
 const NIGERIAN_BANKS = [
@@ -82,21 +82,13 @@ export default function BankInfoStep({ control, errors }) {
             control={control}
             name="bankInfo.bankName"
             render={({ field: { onChange, value } }) => (
-              <View style={[styles.pickerContainer, errors.bankInfo?.bankName && styles.inputError]}>
-                <Picker
-                  selectedValue={value}
-                  onValueChange={onChange}
-                  style={styles.picker}
-                >
-                  {NIGERIAN_BANKS.map((option) => (
-                    <Picker.Item
-                      key={option.value}
-                      label={option.label}
-                      value={option.value}
-                    />
-                  ))}
-                </Picker>
-              </View>
+              <CustomSelect
+                options={NIGERIAN_BANKS}
+                selectedValue={value}
+                onValueChange={onChange}
+                placeholder="Select Bank"
+                error={!!errors.bankInfo?.bankName}
+              />
             )}
           />
           {errors.bankInfo?.bankName && (
@@ -235,15 +227,6 @@ const styles = StyleSheet.create({
   },
   inputError: {
     borderColor: '#ef4444',
-  },
-  pickerContainer: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 12,
-    backgroundColor: '#f9fafb',
-  },
-  picker: {
-    height: 50,
   },
   errorText: {
     fontSize: 14,

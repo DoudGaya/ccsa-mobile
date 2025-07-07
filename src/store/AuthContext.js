@@ -23,6 +23,13 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Check if auth is properly initialized
+    if (!auth) {
+      console.error('Firebase auth is not initialized');
+      setLoading(false);
+      return;
+    }
+
     // Listen for auth state changes
     const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
       if (firebaseUser) {
@@ -47,6 +54,9 @@ export const AuthProvider = ({ children }) => {
 
   const signIn = async (email, password) => {
     try {
+      if (!auth) {
+        throw new Error('Firebase auth is not initialized');
+      }
       setLoading(true);
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
@@ -70,6 +80,9 @@ export const AuthProvider = ({ children }) => {
 
   const signUp = async (email, password, userData = {}) => {
     try {
+      if (!auth) {
+        throw new Error('Firebase auth is not initialized');
+      }
       setLoading(true);
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const firebaseUser = userCredential.user;
@@ -100,6 +113,9 @@ export const AuthProvider = ({ children }) => {
 
   const signOut = async () => {
     try {
+      if (!auth) {
+        throw new Error('Firebase auth is not initialized');
+      }
       setLoading(true);
       await firebaseSignOut(auth);
       setUser(null);

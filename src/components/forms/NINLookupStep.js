@@ -21,6 +21,8 @@ export default function NINLookupStep({
   const [nin, setNin] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [localValidationSuccess, setLocalValidationSuccess] = useState(false);
+  const [hasError, setHasError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   // Use the parent's ninValidated state as the source of truth
   const validationSuccess = ninValidated || localValidationSuccess;
@@ -33,17 +35,35 @@ export default function NINLookupStep({
     
     setIsLoading(true);
     setLocalValidationSuccess(false);
+    setHasError(false);
+    setErrorMessage('');
     
     try {
       await onNINLookup(nin);
       setLocalValidationSuccess(true);
+      setHasError(false);
+      setErrorMessage('');
     } catch (error) {
       console.error('NIN lookup failed:', error);
       setLocalValidationSuccess(false);
-      Alert.alert(
-        'NIN Validation Failed',
-        error.message || 'Unable to validate this NIN. Please check the number and try again.'
-      );
+      setHasError(true);
+      
+      // Check if it's a network timeout error
+      const isNetworkError = error.message.includes('Network request timed out') || 
+                           error.message.includes('network') || 
+                           error.message.includes('timeout') ||
+                           error.message.includes('Unable to connect');
+      
+      const errorMsg = isNetworkError 
+        ? 'Network connection failed. Please check your internet connection and try again.'
+        : error.message || 'Unable to validate this NIN. Please check the number and try again.';
+      
+      setErrorMessage(errorMsg);
+      
+      // Only show alert for non-network errors (network errors will show retry button)
+      if (!isNetworkError) {
+        Alert.alert('NIN Validation Failed', errorMsg);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -82,6 +102,11 @@ export default function NINLookupStep({
                         onNINChange();
                       }
                     }
+                    // Reset error state when user changes NIN
+                    if (hasError) {
+                      setHasError(false);
+                      setErrorMessage('');
+                    }
                   }}
                   onBlur={onBlur}
                   keyboardType="numeric"
@@ -109,7 +134,7 @@ export default function NINLookupStep({
           )}
         </View>
 
-        {!validationSuccess && nin.length === 11 && !isLoading && (
+        {!validationSuccess && nin.length === 11 && !isLoading && !hasError && (
           <TouchableOpacity style={styles.lookupButtonLarge} onPress={handleLookup}>
             <Ionicons name="search" size={24} color="#ffffff" />
             <Text style={styles.lookupButtonText}>Lookup NIN</Text>
@@ -123,6 +148,20 @@ export default function NINLookupStep({
           </View>
         )}
 
+        {hasError && !isLoading && (
+          <View style={styles.errorContainer}>
+            <Ionicons name="alert-circle" size={48} color="#dc2626" />
+            <Text style={styles.errorTitle}>Validation Failed</Text>
+            <Text style={styles.errorDescription}>
+              {errorMessage}
+            </Text>
+            <TouchableOpacity style={styles.retryButton} onPress={handleLookup}>
+              <Ionicons name="refresh" size={20} color="#ffffff" />
+              <Text style={styles.retryButtonText}>Try Again</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {validationSuccess && (
           <View style={styles.successContainer}>
             <Ionicons name="checkmark-circle" size={48} color="#059669" />
@@ -133,11 +172,11 @@ export default function NINLookupStep({
           </View>
         )}
 
-        {nin.length === 11 && !validationSuccess && !isLoading && (
-          <View style={styles.errorContainer}>
+        {nin.length === 11 && !validationSuccess && !isLoading && !hasError && (
+          <View style={styles.warningContainer}>
             <Ionicons name="alert-circle" size={48} color="#f59e0b" />
             <Text style={styles.warningText}>NIN Validation Required</Text>
-            <Text style={styles.errorDescription}>
+            <Text style={styles.warningDescription}>
               Please click "Lookup NIN" to validate this number before proceeding.
             </Text>
           </View>
@@ -270,6 +309,13 @@ const styles = StyleSheet.create({
     color: '#ef4444',
     marginTop: 4,
   },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#dc2626',
+    marginTop: 8,
+    marginBottom: 4,
+  },
   successContainer: {
     alignItems: 'center',
     backgroundColor: '#f0fdf4',
@@ -310,11 +356,28 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   retryButtonText: {
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
+    marginLeft: 8,
+  },
+  warningContainer: {
+    alignItems: 'center',
+    backgroundColor: '#fefbf2',
+    padding: 24,
+    borderRadius: 12,
+    marginTop: 16,
+  },
+  warningDescription: {
+    fontSize: 16,
+    color: '#b45309',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginTop: 4,
   },
   info: {
     backgroundColor: '#eff6ff',

@@ -1,7 +1,7 @@
 import { authMiddleware } from '../../../lib/auth';
 
 // NIN API configuration
-const NIN_API_URL = process.env.NIN_API_URL;
+const NIN_API_BASE_URL = process.env.NIN_API_BASE_URL;
 const NIN_API_KEY = process.env.NIN_API_KEY;
 
 // Mock NIN lookup service (fallback)
@@ -27,13 +27,11 @@ const mockNINData = {
 // Function to lookup NIN from external API
 async function lookupNINFromAPI(nin) {
   try {
-    const url = new URL(NIN_API_URL);
-    url.searchParams.append("op", "level-4");
-    url.searchParams.append("nin", nin);
+    const url = `${NIN_API_BASE_URL}/api/lookup/nin?op=level-4&nin=${nin}`;
     
-    console.log(`Making NIN API request to: ${url.origin}${url.pathname}?op=level-4&nin=****`);
+    console.log(`Making NIN API request to: ${NIN_API_BASE_URL}/api/lookup/nin?op=level-4&nin=****`);
     
-    const response = await fetch(url.toString(), {
+    const response = await fetch(url, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -66,14 +64,7 @@ async function lookupNINFromAPI(nin) {
     
     // Check if the API returned success
     if (data.status === 200 && data.data) {
-      return {
-        firstName: data.data.firstname || '',
-        middleName: data.data.middlename || '',
-        lastName: data.data.surname || '',
-        dateOfBirth: data.data.dateofbirth || '',
-        gender: data.data.gender || '',
-        educationLevel: data.data.educationallevel || '',
-      };
+      return data.data; // Return the raw data from the API
     } else {
       throw new Error(data.message || 'NIN not found or invalid');
     }
@@ -111,7 +102,7 @@ export default authMiddleware(async function handler(req, res) {
     let ninData;
 
     // Try to lookup from external API first
-    if (NIN_API_URL && NIN_API_KEY) {
+    if (NIN_API_BASE_URL && NIN_API_KEY) {
       try {
         ninData = await lookupNINFromAPI(nin);
       } catch (error) {
@@ -121,12 +112,12 @@ export default authMiddleware(async function handler(req, res) {
         const mockData = mockNINData[nin];
         if (mockData) {
           ninData = {
-            firstName: mockData.firstname,
-            middleName: mockData.middlename,
-            lastName: mockData.surname,
-            dateOfBirth: mockData.dateofbirth,
+            firstname: mockData.firstname,
+            middlename: mockData.middlename,
+            surname: mockData.surname,
+            dateofbirth: mockData.dateofbirth,
             gender: mockData.gender,
-            educationLevel: mockData.educationallevel,
+            educationallevel: mockData.educationallevel,
           };
         } else {
           return res.status(404).json({ 
@@ -143,12 +134,12 @@ export default authMiddleware(async function handler(req, res) {
       const mockData = mockNINData[nin];
       if (mockData) {
         ninData = {
-          firstName: mockData.firstname,
-          middleName: mockData.middlename,
-          lastName: mockData.surname,
-          dateOfBirth: mockData.dateofbirth,
+          firstname: mockData.firstname,
+          middlename: mockData.middlename,
+          surname: mockData.surname,
+          dateofbirth: mockData.dateofbirth,
           gender: mockData.gender,
-          educationLevel: mockData.educationallevel,
+          educationallevel: mockData.educationallevel,
         };
       } else {
         return res.status(404).json({ 

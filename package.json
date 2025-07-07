@@ -25,12 +25,14 @@
     "expo-status-bar": "~2.2.3",
     "firebase": "^11.10.0",
     "nativewind": "^4.1.23",
+    "node-fetch": "^3.3.2",
     "react": "19.0.0",
     "react-hook-form": "^7.60.0",
     "react-native": "0.79.5",
     "react-native-html-to-pdf": "^0.12.0",
     "react-native-maps": "1.20.1",
     "react-native-qrcode-svg": "^6.3.15",
+    "react-native-reanimated": "~3.17.4",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "~4.11.1",
     "react-native-svg": "15.11.2",
@@ -38,8 +40,7 @@
     "react-native-vector-icons": "^10.2.0",
     "tailwindcss": "^4.1.11",
     "zod": "^3.25.74",
-    "zustand": "^5.0.6",
-    "react-native-reanimated": "~3.17.4"
+    "zustand": "^5.0.6"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

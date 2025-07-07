@@ -11,6 +11,7 @@ import WelcomeScreen from '../screens/WelcomeScreen';
 import LoginScreen from '../screens/LoginScreen';
 import RegisterScreen from '../screens/RegisterScreen';
 import AddFarmerScreen from '../screens/AddFarmerScreen';
+import AddFarmScreen from '../screens/AddFarmScreen';
 import FarmersListScreen from '../screens/FarmersListScreen';
 import SearchFarmerScreen from '../screens/SearchFarmerScreen';
 import CertificateScreen from '../screens/CertificateScreen';
@@ -129,6 +130,11 @@ export default function AppNavigator() {
             name="FarmerDetails" 
             component={FarmerDetailsScreen}
             options={{ headerShown: true, title: 'Farmer Details' }}
+          />
+          <Stack.Screen 
+            name="AddFarm" 
+            component={AddFarmScreen}
+            options={{ headerShown: false }}
           />
         </>
       ) : (
