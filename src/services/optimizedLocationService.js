@@ -136,8 +136,6 @@ class OptimizedLocationService {
     try {
       this.loading.wards[cacheKey] = true;
       console.log(`🏡 Loading wards for LGA: ${stateValue}-${lgaValue}...`);
-
-      // Load the entire wards data file once and cache the specific LGA's wards
       if (!this.cache.allWardsByLga) {
         const wardsData = require('../../assets/location/wards-by-lga.json');
         this.cache.allWardsByLga = wardsData;
@@ -146,10 +144,10 @@ class OptimizedLocationService {
       const wards = this.cache.allWardsByLga[cacheKey] || [];
       this.cache.wardsByLga[cacheKey] = wards;
       
-      console.log(`✅ Loaded ${wards.length} wards for ${cacheKey}`);
+    //   console.log(`✅ Loaded ${wards.length} wards for ${cacheKey}`);
       return wards;
     } catch (error) {
-      console.error(`❌ Error loading wards for ${cacheKey}:`, error);
+    //   console.error(`❌ Error loading wards for ${cacheKey}:`, error);
       return [];
     } finally {
       this.loading.wards[cacheKey] = false;
@@ -203,10 +201,10 @@ class OptimizedLocationService {
       const pollingUnits = this.cache.allPollingUnitsByWard[cacheKey] || [];
       this.cache.pollingUnitsByWard[cacheKey] = pollingUnits;
       
-      console.log(`✅ Loaded ${pollingUnits.length} polling units for ${cacheKey}`);
+    //   console.log(`✅ Loaded ${pollingUnits.length} polling units for ${cacheKey}`);
       return pollingUnits;
     } catch (error) {
-      console.error(`❌ Error loading polling units for ${cacheKey}:`, error);
+    //   console.error(`❌ Error loading polling units for ${cacheKey}:`, error);
       return [];
     } finally {
       this.loading.polling[loadingKey] = false;
