@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,7 +13,13 @@ import { Picker } from '@react-native-picker/picker';
 import * as Location from 'expo-location';
 import CropSelect from '../common/CropSelect';
 import CustomSelect from '../common/CustomSelect';
+import SearchableSelect from '../common/SearchableSelect';
+import StateSelect from '../common/StateSelect';
+import LGASelect from '../common/LGASelect';
+import WardSelect from '../common/WardSelect';
+import PollingUnitSelect from '../common/PollingUnitSelect';
 import FarmPolygonMapper from '../common/FarmPolygonMapper';
+import optimizedLocationService from '../../services/optimizedLocationServiceV2';
 
 const FARM_CATEGORIES = [
   { label: 'Select Farm Category', value: '' },
@@ -50,6 +56,36 @@ const CROPS = [
 export default function FarmInfoStep({ control, errors, setValue, watch, showTitle = true }) {
   const [loadingLocation, setLoadingLocation] = useState(false);
   const [coordinates, setCoordinates] = useState(watch('farmInfo.coordinates'));
+
+  // Watch form values for cascading dropdowns
+  const selectedState = watch('farmInfo.state');
+  const selectedLocalGovernment = watch('farmInfo.localGovernment');
+  const selectedWard = watch('farmInfo.ward');
+  
+  // State for dropdown options and loading states
+  // Note: Individual select components now handle their own loading
+
+  // Reset dependent fields when parent field changes
+  useEffect(() => {
+    if (selectedState) {
+      setValue('farmInfo.localGovernment', '');
+      setValue('farmInfo.ward', '');
+      setValue('farmInfo.pollingUnit', '');
+    }
+  }, [selectedState, setValue]);
+
+  useEffect(() => {
+    if (selectedLocalGovernment) {
+      setValue('farmInfo.ward', '');
+      setValue('farmInfo.pollingUnit', '');
+    }
+  }, [selectedLocalGovernment, setValue]);
+
+  useEffect(() => {
+    if (selectedWard) {
+      setValue('farmInfo.pollingUnit', '');
+    }
+  }, [selectedWard, setValue]);
 
   const getCurrentLocation = async () => {
     try {
@@ -96,9 +132,95 @@ export default function FarmInfoStep({ control, errors, setValue, watch, showTit
       )}
 
       <View style={styles.form}>
-        {/* Farm Location */}
+        {/* State */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Farm Location</Text>
+          <Text style={styles.label}>State *</Text>
+          <Controller
+            control={control}
+            name="farmInfo.state"
+            render={({ field: { onChange, value } }) => (
+              <StateSelect
+                selectedValue={value}
+                onValueChange={onChange}
+                placeholder="Select State"
+                error={!!errors?.farmInfo?.state}
+              />
+            )}
+          />
+          {errors?.farmInfo?.state && (
+            <Text style={styles.errorText}>{errors.farmInfo.state.message}</Text>
+          )}
+        </View>
+
+        {/* Local Government */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Local Government *</Text>
+          <Controller
+            control={control}
+            name="farmInfo.localGovernment"
+            render={({ field: { onChange, value } }) => (
+              <LGASelect
+                selectedState={selectedState}
+                selectedValue={value}
+                onValueChange={onChange}
+                placeholder="Select Local Government"
+                error={!!errors?.farmInfo?.localGovernment}
+              />
+            )}
+          />
+          {errors?.farmInfo?.localGovernment && (
+            <Text style={styles.errorText}>{errors.farmInfo.localGovernment.message}</Text>
+          )}
+        </View>
+
+        {/* Ward */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Ward *</Text>
+          <Controller
+            control={control}
+            name="farmInfo.ward"
+            render={({ field: { onChange, value } }) => (
+              <WardSelect
+                selectedState={selectedState}
+                selectedLGA={selectedLocalGovernment}
+                selectedValue={value}
+                onValueChange={onChange}
+                placeholder="Select Ward"
+                error={!!errors?.farmInfo?.ward}
+              />
+            )}
+          />
+          {errors?.farmInfo?.ward && (
+            <Text style={styles.errorText}>{errors.farmInfo.ward.message}</Text>
+          )}
+        </View>
+
+        {/* Polling Unit */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Polling Unit *</Text>
+          <Controller
+            control={control}
+            name="farmInfo.pollingUnit"
+            render={({ field: { onChange, value } }) => (
+              <PollingUnitSelect
+                selectedState={selectedState}
+                selectedLGA={selectedLocalGovernment}
+                selectedWard={selectedWard}
+                selectedValue={value}
+                onValueChange={onChange}
+                placeholder="Select Polling Unit"
+                error={!!errors?.farmInfo?.pollingUnit}
+              />
+            )}
+          />
+          {errors?.farmInfo?.pollingUnit && (
+            <Text style={styles.errorText}>{errors.farmInfo.pollingUnit.message}</Text>
+          )}
+        </View>
+
+        {/* Farm Location Description */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Farm Location Description</Text>
           <Controller
             control={control}
             name="farmInfo.farmLocation"
@@ -107,7 +229,7 @@ export default function FarmInfoStep({ control, errors, setValue, watch, showTit
                 <Ionicons name="location-outline" size={20} color="#9ca3af" style={styles.inputIcon} />
                 <TextInput
                   style={styles.input}
-                  placeholder="Describe farm location"
+                  placeholder="Additional location details (optional)"
                   value={value}
                   onChangeText={onChange}
                   onBlur={onBlur}

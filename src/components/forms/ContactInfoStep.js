@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,63 +10,47 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Controller } from 'react-hook-form';
 import CustomSelect from '../common/CustomSelect';
+import SearchableSelect from '../common/SearchableSelect';
+import StateSelect from '../common/StateSelect';
+import LGASelect from '../common/LGASelect';
+import WardSelect from '../common/WardSelect';
+import PollingUnitSelect from '../common/PollingUnitSelect';
 import * as Location from 'expo-location';
-
-// Nigerian states
-const NIGERIAN_STATES = [
-  { label: 'Select State', value: '' },
-  { label: 'Abia', value: 'ABIA' },
-  { label: 'Adamawa', value: 'ADAMAWA' },
-  { label: 'Akwa Ibom', value: 'AKWA_IBOM' },
-  { label: 'Anambra', value: 'ANAMBRA' },
-  { label: 'Bauchi', value: 'BAUCHI' },
-  { label: 'Bayelsa', value: 'BAYELSA' },
-  { label: 'Benue', value: 'BENUE' },
-  { label: 'Borno', value: 'BORNO' },
-  { label: 'Cross River', value: 'CROSS_RIVER' },
-  { label: 'Delta', value: 'DELTA' },
-  { label: 'Ebonyi', value: 'EBONYI' },
-  { label: 'Edo', value: 'EDO' },
-  { label: 'Ekiti', value: 'EKITI' },
-  { label: 'Enugu', value: 'ENUGU' },
-  { label: 'FCT', value: 'FCT' },
-  { label: 'Gombe', value: 'GOMBE' },
-  { label: 'Imo', value: 'IMO' },
-  { label: 'Jigawa', value: 'JIGAWA' },
-  { label: 'Kaduna', value: 'KADUNA' },
-  { label: 'Kano', value: 'KANO' },
-  { label: 'Katsina', value: 'KATSINA' },
-  { label: 'Kebbi', value: 'KEBBI' },
-  { label: 'Kogi', value: 'KOGI' },
-  { label: 'Kwara', value: 'KWARA' },
-  { label: 'Lagos', value: 'LAGOS' },
-  { label: 'Nasarawa', value: 'NASARAWA' },
-  { label: 'Niger', value: 'NIGER' },
-  { label: 'Ogun', value: 'OGUN' },
-  { label: 'Ondo', value: 'ONDO' },
-  { label: 'Osun', value: 'OSUN' },
-  { label: 'Oyo', value: 'OYO' },
-  { label: 'Plateau', value: 'PLATEAU' },
-  { label: 'Rivers', value: 'RIVERS' },
-  { label: 'Sokoto', value: 'SOKOTO' },
-  { label: 'Taraba', value: 'TARABA' },
-  { label: 'Yobe', value: 'YOBE' },
-  { label: 'Zamfara', value: 'ZAMFARA' },
-];
-
-const SAMPLE_CLUSTERS = [
-  { label: 'Select Cluster', value: '' },
-  { label: 'North Central', value: 'NORTH_CENTRAL' },
-  { label: 'North East', value: 'NORTH_EAST' },
-  { label: 'North West', value: 'NORTH_WEST' },
-  { label: 'South East', value: 'SOUTH_EAST' },
-  { label: 'South South', value: 'SOUTH_SOUTH' },
-  { label: 'South West', value: 'SOUTH_WEST' },
-];
+import optimizedLocationService from '../../services/optimizedLocationService';
 
 export default function ContactInfoStep({ control, errors, setValue, watch }) {
   const [loadingLocation, setLoadingLocation] = useState(false);
   const coordinates = watch('contactInfo.coordinates');
+  
+  // Watch form values for cascading dropdowns
+  const selectedState = watch('contactInfo.state');
+  const selectedLocalGovernment = watch('contactInfo.localGovernment');
+  const selectedWard = watch('contactInfo.ward');
+  
+  // State for dropdown options and loading states
+  // Note: Individual select components now handle their own loading
+
+  // Reset dependent fields when parent field changes
+  useEffect(() => {
+    if (selectedState) {
+      setValue('contactInfo.localGovernment', '');
+      setValue('contactInfo.ward', '');
+      setValue('contactInfo.pollingUnit', '');
+    }
+  }, [selectedState, setValue]);
+
+  useEffect(() => {
+    if (selectedLocalGovernment) {
+      setValue('contactInfo.ward', '');
+      setValue('contactInfo.pollingUnit', '');
+    }
+  }, [selectedLocalGovernment, setValue]);
+
+  useEffect(() => {
+    if (selectedWard) {
+      setValue('contactInfo.pollingUnit', '');
+    }
+  }, [selectedWard, setValue]);
 
   const getCurrentLocation = async () => {
     try {
@@ -225,8 +209,7 @@ export default function ContactInfoStep({ control, errors, setValue, watch }) {
             control={control}
             name="contactInfo.state"
             render={({ field: { onChange, value } }) => (
-              <CustomSelect
-                options={NIGERIAN_STATES}
+              <StateSelect
                 selectedValue={value}
                 onValueChange={onChange}
                 placeholder="Select State"
@@ -245,18 +228,14 @@ export default function ContactInfoStep({ control, errors, setValue, watch }) {
           <Controller
             control={control}
             name="contactInfo.localGovernment"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <View style={styles.inputContainer}>
-                <Ionicons name="business-outline" size={20} color="#9ca3af" style={styles.inputIcon} />
-                <TextInput
-                  style={[styles.input, errors.contactInfo?.localGovernment && styles.inputError]}
-                  placeholder="Enter Local Government Area"
-                  value={value}
-                  onChangeText={onChange}
-                  onBlur={onBlur}
-                  autoCapitalize="words"
-                />
-              </View>
+            render={({ field: { onChange, value } }) => (
+              <LGASelect
+                selectedState={selectedState}
+                selectedValue={value}
+                onValueChange={onChange}
+                placeholder="Select Local Government"
+                error={!!errors.contactInfo?.localGovernment}
+              />
             )}
           />
           {errors.contactInfo?.localGovernment && (
@@ -270,18 +249,15 @@ export default function ContactInfoStep({ control, errors, setValue, watch }) {
           <Controller
             control={control}
             name="contactInfo.ward"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <View style={styles.inputContainer}>
-                <Ionicons name="location-outline" size={20} color="#9ca3af" style={styles.inputIcon} />
-                <TextInput
-                  style={[styles.input, errors.contactInfo?.ward && styles.inputError]}
-                  placeholder="Enter Ward"
-                  value={value}
-                  onChangeText={onChange}
-                  onBlur={onBlur}
-                  autoCapitalize="words"
-                />
-              </View>
+            render={({ field: { onChange, value } }) => (
+              <WardSelect
+                selectedState={selectedState}
+                selectedLGA={selectedLocalGovernment}
+                selectedValue={value}
+                onValueChange={onChange}
+                placeholder="Select Ward"
+                error={!!errors.contactInfo?.ward}
+              />
             )}
           />
           {errors.contactInfo?.ward && (
@@ -295,43 +271,20 @@ export default function ContactInfoStep({ control, errors, setValue, watch }) {
           <Controller
             control={control}
             name="contactInfo.pollingUnit"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <View style={styles.inputContainer}>
-                <Ionicons name="checkbox-outline" size={20} color="#9ca3af" style={styles.inputIcon} />
-                <TextInput
-                  style={[styles.input, errors.contactInfo?.pollingUnit && styles.inputError]}
-                  placeholder="Enter Polling Unit (optional)"
-                  value={value}
-                  onChangeText={onChange}
-                  onBlur={onBlur}
-                  autoCapitalize="words"
-                />
-              </View>
+            render={({ field: { onChange, value } }) => (
+              <PollingUnitSelect
+                selectedState={selectedState}
+                selectedLGA={selectedLocalGovernment}
+                selectedWard={selectedWard}
+                selectedValue={value}
+                onValueChange={onChange}
+                placeholder="Select Polling Unit (Optional)"
+                error={!!errors.contactInfo?.pollingUnit}
+              />
             )}
           />
           {errors.contactInfo?.pollingUnit && (
             <Text style={styles.errorText}>{errors.contactInfo.pollingUnit.message}</Text>
-          )}
-        </View>
-
-        {/* Cluster */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Cluster</Text>
-          <Controller
-            control={control}
-            name="contactInfo.cluster"
-            render={({ field: { onChange, value } }) => (
-              <CustomSelect
-                options={SAMPLE_CLUSTERS}
-                selectedValue={value}
-                onValueChange={onChange}
-                placeholder="Select Cluster (optional)"
-                error={!!errors.contactInfo?.cluster}
-              />
-            )}
-          />
-          {errors.contactInfo?.cluster && (
-            <Text style={styles.errorText}>{errors.contactInfo.cluster.message}</Text>
           )}
         </View>
 

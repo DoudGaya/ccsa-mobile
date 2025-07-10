@@ -1,1 +1,11 @@
-{}
+{
+  "/_app": "pages/_app.js",
+  "/_error": "pages/_error.js",
+  "/_document": "pages/_document.js",
+  "/api/farmers": "pages/api/farmers.js",
+  "/api/farmers/search": "pages/api/farmers/search.js",
+  "/api/farms/farmer/[farmerId]": "pages/api/farms/farmer/[farmerId].js",
+  "/api/temp-nin/lookup": "pages/api/temp-nin/lookup.js",
+  "/api/test": "pages/api/test.js",
+  "/api/nin/lookup": "pages/api/nin/lookup.js"
+}
