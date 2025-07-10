@@ -312,5 +312,4 @@ class OptimizedLocationService {
   }
 }
 
-// Create and export a singleton instance
 export default new OptimizedLocationService();
