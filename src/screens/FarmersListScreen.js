@@ -8,30 +8,51 @@ import {
   SafeAreaView,
   RefreshControl,
   TextInput,
+  Alert,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { useFarmerStore } from '../store/farmerStore';
 import LoadingScreen from './LoadingScreen';
 
 export default function FarmersListScreen({ navigation }) {
-  const { farmers, loading, getFarmers } = useFarmerStore();
+  const { farmers, loading, fetchFarmers } = useFarmerStore();
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredFarmers, setFilteredFarmers] = useState([]);
 
-  useEffect(() => {
-    loadFarmers();
-  }, []);
+  // Use useFocusEffect to reload farmers when screen comes into focus
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log('📱 FarmersListScreen focused, fetching farmers...');
+      loadFarmers();
+    }, [fetchFarmers]) // Add fetchFarmers as dependency
+  );
 
   useEffect(() => {
     filterFarmers();
   }, [farmers, searchQuery]);
 
+  useEffect(() => {
+    console.log('Farmers updated:', farmers?.length || 0);
+  }, [farmers]);
+
   const loadFarmers = async () => {
+    // Prevent multiple simultaneous calls
+    if (loading) {
+      console.log('📱 FarmersListScreen: Already loading, skipping...');
+      return;
+    }
+    
     try {
-      await getFarmers();
+      console.log('📱 FarmersListScreen: Loading farmers...');
+      await fetchFarmers();
+      console.log('📱 FarmersListScreen: Farmers loaded, count:', farmers?.length || 0);
+      console.log('📱 FarmersListScreen: Current farmers state:', farmers);
     } catch (error) {
-      console.error('Error loading farmers:', error);
+      console.error('📱 FarmersListScreen: Error loading farmers:', error);
+      Alert.alert('Error', `Failed to load farmers: ${error.message}`);
     }
   };
 
@@ -42,17 +63,29 @@ export default function FarmersListScreen({ navigation }) {
   };
 
   const filterFarmers = () => {
+    console.log('📱 FarmersListScreen: Filtering farmers...');
+    console.log('📱 Raw farmers from store:', farmers);
+    console.log('📱 Raw farmers length:', farmers?.length || 0);
+    console.log('📱 Search query:', searchQuery);
+    
+    if (!farmers || farmers.length === 0) {
+      console.log('📱 No farmers to filter');
+      setFilteredFarmers([]);
+      return;
+    }
+
     if (!searchQuery.trim()) {
+      console.log('📱 No search query, showing all farmers');
       setFilteredFarmers(farmers);
       return;
     }
 
     const filtered = farmers.filter((farmer) => {
       const query = searchQuery.toLowerCase();
-      const fullName = `${farmer.personalInfo.firstName} ${farmer.personalInfo.lastName}`.toLowerCase();
-      const email = farmer.personalInfo.email.toLowerCase();
-      const phone = farmer.personalInfo.phoneNumber;
-      const nin = farmer.nin;
+      const fullName = `${farmer.firstName || ''} ${farmer.lastName || ''}`.toLowerCase();
+      const email = (farmer.email || '').toLowerCase();
+      const phone = farmer.phone || '';
+      const nin = farmer.nin || '';
 
       return (
         fullName.includes(query) ||
@@ -62,33 +95,56 @@ export default function FarmersListScreen({ navigation }) {
       );
     });
 
+    console.log('📱 Filtered farmers length:', filtered.length);
     setFilteredFarmers(filtered);
   };
 
   const renderFarmerCard = ({ item: farmer }) => (
     <TouchableOpacity
       style={styles.farmerCard}
-      onPress={() => navigation.navigate('FarmerDetails', { farmer })}
+      onPress={() => navigation.navigate('FarmerDetails', { farmerId: farmer.id, farmer })}
     >
       <View style={styles.cardHeader}>
         <View style={styles.avatarContainer}>
-          <Text style={styles.avatarText}>
-            {farmer.personalInfo.firstName[0]}{farmer.personalInfo.lastName[0]}
-          </Text>
+          {farmer.photoUrl ? (
+            <Image
+              source={{ uri: farmer.photoUrl }}
+              style={styles.avatarImage}
+              defaultSource={require('../../assets/icon.png')}
+            />
+          ) : (
+            <Text style={styles.avatarText}>
+              {farmer.firstName?.[0] || '?'}{farmer.lastName?.[0] || '?'}
+            </Text>
+          )}
         </View>
         <View style={styles.farmerInfo}>
           <Text style={styles.farmerName}>
-            {farmer.personalInfo.firstName} {farmer.personalInfo.lastName}
+            {farmer.firstName} {farmer.lastName}
           </Text>
           <Text style={styles.farmerDetails}>
             NIN: {farmer.nin}
           </Text>
           <Text style={styles.farmerDetails}>
-            {farmer.personalInfo.phoneNumber}
+            {farmer.phone}
           </Text>
+          {farmer.email && (
+            <Text style={styles.farmerDetails}>
+              {farmer.email}
+            </Text>
+          )}
         </View>
         <View style={styles.cardActions}>
-          <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
+          <TouchableOpacity
+            style={styles.addFarmButton}
+            onPress={() => navigation.navigate('AddFarm', { 
+              farmerId: farmer.id, 
+              farmer: farmer 
+            })}
+          >
+            <Ionicons name="add-circle" size={24} color="#10b981" />
+            <Text style={styles.addFarmText}>Add Farm</Text>
+          </TouchableOpacity>
         </View>
       </View>
       
@@ -96,11 +152,11 @@ export default function FarmersListScreen({ navigation }) {
         <View style={styles.locationInfo}>
           <Ionicons name="location-outline" size={16} color="#6b7280" />
           <Text style={styles.locationText}>
-            {farmer.contactInfo.ward}, {farmer.contactInfo.localGovernment}
+            {[farmer.ward, farmer.lga, farmer.state].filter(Boolean).join(', ') || 'Location not specified'}
           </Text>
         </View>
         <Text style={styles.registrationDate}>
-          Registered: {new Date(farmer.createdAt).toLocaleDateString()}
+          Registered: {new Date(farmer.createdAt || farmer.registrationDate || Date.now()).toLocaleDateString()}
         </Text>
       </View>
     </TouchableOpacity>
@@ -125,7 +181,7 @@ export default function FarmersListScreen({ navigation }) {
     </View>
   );
 
-  if (loading && farmers.length === 0) {
+  if (loading && (!farmers || farmers.length === 0)) {
     return <LoadingScreen message="Loading farmers..." />;
   }
 
@@ -135,7 +191,7 @@ export default function FarmersListScreen({ navigation }) {
       <View style={styles.header}>
         <Text style={styles.title}>Registered Farmers</Text>
         <Text style={styles.subtitle}>
-          {farmers.length} farmer{farmers.length !== 1 ? 's' : ''} registered
+          {farmers?.length || 0} farmer{(farmers?.length || 0) !== 1 ? 's' : ''} registered
         </Text>
       </View>
 
@@ -175,7 +231,7 @@ export default function FarmersListScreen({ navigation }) {
       />
 
       {/* Floating Add Button */}
-      {farmers.length > 0 && (
+      {farmers && farmers.length > 0 && (
         <TouchableOpacity
           style={styles.fab}
           onPress={() => navigation.navigate('AddFarmer')}
@@ -264,6 +320,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
   },
   avatarText: {
     fontSize: 18,
@@ -285,7 +347,21 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   cardActions: {
+    alignItems: 'center',
     padding: 8,
+  },
+  addFarmButton: {
+    alignItems: 'center',
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: '#f0fdf4',
+    minWidth: 70,
+  },
+  addFarmText: {
+    fontSize: 12,
+    color: '#10b981',
+    fontWeight: '600',
+    marginTop: 2,
   },
   cardFooter: {
     flexDirection: 'row',

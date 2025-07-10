@@ -8,9 +8,14 @@ import {
   SafeAreaView,
   Alert,
   ScrollView,
+  Platform,
+  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import QRCode from 'react-native-qrcode-svg';
+import RNHTMLtoPDF from 'react-native-html-to-pdf';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import { useFarmerStore } from '../store/farmerStore';
 import LoadingScreen from './LoadingScreen';
 
@@ -49,26 +54,300 @@ export default function CertificateScreen({ navigation }) {
     try {
       setLoading(true);
       
-      // In a real app, this would call an API to generate and save the certificate
+      // Generate HTML content for the certificate
+      const htmlContent = generateCertificateHTML(farmer);
+      
+      // Create PDF options
+      const options = {
+        html: htmlContent,
+        fileName: `farmer_certificate_${farmer.nin}`,
+        directory: 'Documents',
+        base64: true,
+      };
+
+      if (Platform.OS === 'ios') {
+        // For iOS, use expo-file-system and expo-sharing
+        await generatePDFWithExpo(htmlContent, farmer.nin);
+      } else {
+        // For Android, use react-native-html-to-pdf
+        const file = await RNHTMLtoPDF.convert(options);
+        
+        if (file.filePath) {
+          Alert.alert(
+            'Certificate Generated',
+            'Farmer certificate has been generated successfully!',
+            [
+              {
+                text: 'View PDF',
+                onPress: () => viewPDF(file.filePath)
+              },
+              {
+                text: 'Share PDF',
+                onPress: () => sharePDF(file.filePath)
+              },
+              { text: 'OK' }
+            ]
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Certificate generation error:', error);
+      Alert.alert('Error', 'Failed to generate certificate. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generatePDFWithExpo = async (htmlContent, nin) => {
+    try {
+      // For now, we'll create a simple text file since HTML to PDF is complex in Expo
+      // In a production app, you'd want to use a backend service for PDF generation
+      const fileName = `farmer_certificate_${nin}.txt`;
+      const fileUri = FileSystem.documentDirectory + fileName;
+      
+      // Convert HTML to plain text for now
+      const textContent = htmlContent.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ');
+      
+      await FileSystem.writeAsStringAsync(fileUri, textContent);
+      
       Alert.alert(
         'Certificate Generated',
         'Farmer certificate has been generated successfully!',
         [
           {
-            text: 'View PDF',
-            onPress: () => {
-              // In a real app, this would open the generated PDF
-              Alert.alert('Feature Coming Soon', 'PDF generation will be implemented with react-native-pdf library');
-            }
+            text: 'View/Share',
+            onPress: () => Sharing.shareAsync(fileUri)
           },
           { text: 'OK' }
         ]
       );
     } catch (error) {
-      Alert.alert('Error', 'Failed to generate certificate');
-    } finally {
-      setLoading(false);
+      throw error;
     }
+  };
+
+  const viewPDF = async (filePath) => {
+    try {
+      if (Platform.OS === 'android') {
+        // On Android, try to open with default PDF viewer
+        await Linking.openURL(`file://${filePath}`);
+      } else {
+        // On iOS, use sharing
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(filePath);
+        }
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Unable to open PDF file');
+    }
+  };
+
+  const sharePDF = async (filePath) => {
+    try {
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(filePath);
+      } else {
+        Alert.alert('Error', 'Sharing is not available on this device');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Unable to share PDF file');
+    }
+  };
+
+  const generateCertificateHTML = (farmer) => {
+    const currentDate = new Date().toLocaleDateString();
+    
+    return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <title>Farmer Registration Certificate</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                margin: 40px;
+                line-height: 1.6;
+                color: #333;
+            }
+            .header {
+                text-align: center;
+                margin-bottom: 40px;
+                border-bottom: 3px solid #2563eb;
+                padding-bottom: 20px;
+            }
+            .logo {
+                font-size: 28px;
+                font-weight: bold;
+                color: #2563eb;
+                margin-bottom: 10px;
+            }
+            .title {
+                font-size: 24px;
+                font-weight: bold;
+                margin: 20px 0;
+                color: #1f2937;
+            }
+            .certificate-number {
+                font-size: 14px;
+                color: #6b7280;
+                margin-bottom: 20px;
+            }
+            .farmer-info {
+                background: #f8fafc;
+                padding: 20px;
+                border-radius: 8px;
+                margin: 20px 0;
+            }
+            .section {
+                margin: 20px 0;
+            }
+            .section-title {
+                font-size: 18px;
+                font-weight: bold;
+                color: #1f2937;
+                border-bottom: 1px solid #e5e7eb;
+                padding-bottom: 5px;
+                margin-bottom: 15px;
+            }
+            .detail-row {
+                display: flex;
+                margin: 8px 0;
+            }
+            .detail-label {
+                font-weight: bold;
+                width: 150px;
+                color: #6b7280;
+            }
+            .detail-value {
+                flex: 1;
+                color: #1f2937;
+            }
+            .footer {
+                margin-top: 40px;
+                text-align: center;
+                padding-top: 20px;
+                border-top: 1px solid #e5e7eb;
+                font-size: 12px;
+                color: #6b7280;
+            }
+            .signature-section {
+                margin-top: 40px;
+                display: flex;
+                justify-content: space-between;
+            }
+            .signature-box {
+                text-align: center;
+                width: 200px;
+            }
+            .signature-line {
+                border-top: 1px solid #333;
+                margin-top: 50px;
+                padding-top: 5px;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <div class="logo">FIMS - Farmers Information Management System</div>
+            <div class="title">FARMER REGISTRATION CERTIFICATE</div>
+            <div class="certificate-number">Certificate No: ${farmer.nin}-${currentDate.replace(/\//g, '')}</div>
+        </div>
+
+        <div class="farmer-info">
+            <div class="section-title">Farmer Information</div>
+            <div class="detail-row">
+                <div class="detail-label">Full Name:</div>
+                <div class="detail-value">${farmer.firstName} ${farmer.middleName || ''} ${farmer.lastName}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">NIN:</div>
+                <div class="detail-value">${farmer.nin}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Phone:</div>
+                <div class="detail-value">${farmer.phone}</div>
+            </div>
+            ${farmer.email ? `
+            <div class="detail-row">
+                <div class="detail-label">Email:</div>
+                <div class="detail-value">${farmer.email}</div>
+            </div>
+            ` : ''}
+            <div class="detail-row">
+                <div class="detail-label">Date of Birth:</div>
+                <div class="detail-value">${farmer.dateOfBirth || 'N/A'}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Gender:</div>
+                <div class="detail-value">${farmer.gender || 'N/A'}</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Contact Information</div>
+            <div class="detail-row">
+                <div class="detail-label">Address:</div>
+                <div class="detail-value">${farmer.address || 'N/A'}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">State:</div>
+                <div class="detail-value">${farmer.state || 'N/A'}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">LGA:</div>
+                <div class="detail-value">${farmer.lga || 'N/A'}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Ward:</div>
+                <div class="detail-value">${farmer.ward || 'N/A'}</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Banking Information</div>
+            <div class="detail-row">
+                <div class="detail-label">Bank:</div>
+                <div class="detail-value">${farmer.bankName || 'N/A'}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Account Number:</div>
+                <div class="detail-value">${farmer.accountNumber || 'N/A'}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">BVN:</div>
+                <div class="detail-value">${farmer.bvn || 'N/A'}</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Registration Details</div>
+            <div class="detail-row">
+                <div class="detail-label">Registration Date:</div>
+                <div class="detail-value">${new Date(farmer.createdAt).toLocaleDateString()}</div>
+            </div>
+            <div class="detail-row">
+                <div class="detail-label">Certificate Date:</div>
+                <div class="detail-value">${currentDate}</div>
+            </div>
+        </div>
+
+        <div class="signature-section">
+            <div class="signature-box">
+                <div class="signature-line">Agent Signature</div>
+            </div>
+            <div class="signature-box">
+                <div class="signature-line">Official Stamp</div>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>This certificate confirms that the above-named individual has been successfully registered in the Farmers Information Management System (FIMS).</p>
+            <p>Generated on ${currentDate} | Certificate ID: ${farmer.nin}-${currentDate.replace(/\//g, '')}</p>
+        </div>
+    </body>
+    </html>
+    `;
   };
 
   const clearSearch = () => {
@@ -138,22 +417,24 @@ export default function CertificateScreen({ navigation }) {
                 <View style={styles.cardHeader}>
                   <View style={styles.avatarContainer}>
                     <Text style={styles.avatarText}>
-                      {farmer.personalInfo.firstName[0]}{farmer.personalInfo.lastName[0]}
+                      {farmer.firstName?.[0] || '?'}{farmer.lastName?.[0] || '?'}
                     </Text>
                   </View>
                   <View style={styles.farmerInfo}>
                     <Text style={styles.farmerName}>
-                      {farmer.personalInfo.firstName} {farmer.personalInfo.middleName || ''} {farmer.personalInfo.lastName}
+                      {farmer.firstName} {farmer.middleName || ''} {farmer.lastName}
                     </Text>
                     <Text style={styles.farmerDetails}>
                       NIN: {farmer.nin}
                     </Text>
                     <Text style={styles.farmerDetails}>
-                      Phone: {farmer.personalInfo.phoneNumber}
+                      Phone: {farmer.phone}
                     </Text>
-                    <Text style={styles.farmerDetails}>
-                      Email: {farmer.personalInfo.email}
-                    </Text>
+                    {farmer.email && (
+                      <Text style={styles.farmerDetails}>
+                        Email: {farmer.email}
+                      </Text>
+                    )}
                   </View>
                 </View>
 
@@ -178,51 +459,51 @@ export default function CertificateScreen({ navigation }) {
                   <Text style={styles.sectionTitle}>Personal Information</Text>
                   <View style={styles.detailRow}>
                     <Text style={styles.detailLabel}>Date of Birth:</Text>
-                    <Text style={styles.detailValue}>{farmer.personalInfo.dateOfBirth}</Text>
+                    <Text style={styles.detailValue}>{farmer.dateOfBirth || 'N/A'}</Text>
                   </View>
                   <View style={styles.detailRow}>
                     <Text style={styles.detailLabel}>Gender:</Text>
-                    <Text style={styles.detailValue}>{farmer.personalInfo.gender}</Text>
+                    <Text style={styles.detailValue}>{farmer.gender || 'N/A'}</Text>
                   </View>
                   <View style={styles.detailRow}>
                     <Text style={styles.detailLabel}>Marital Status:</Text>
-                    <Text style={styles.detailValue}>{farmer.personalInfo.maritalStatus}</Text>
+                    <Text style={styles.detailValue}>{farmer.maritalStatus || 'N/A'}</Text>
                   </View>
                   <View style={styles.detailRow}>
                     <Text style={styles.detailLabel}>Employment Status:</Text>
-                    <Text style={styles.detailValue}>{farmer.personalInfo.employmentStatus}</Text>
+                    <Text style={styles.detailValue}>{farmer.employmentStatus || 'N/A'}</Text>
                   </View>
 
                   <Text style={styles.sectionTitle}>Contact Information</Text>
                   <View style={styles.detailRow}>
                     <Text style={styles.detailLabel}>Address:</Text>
-                    <Text style={styles.detailValue}>{farmer.contactInfo.address}</Text>
+                    <Text style={styles.detailValue}>{farmer.address || 'N/A'}</Text>
                   </View>
                   <View style={styles.detailRow}>
                     <Text style={styles.detailLabel}>State:</Text>
-                    <Text style={styles.detailValue}>{farmer.contactInfo.state}</Text>
+                    <Text style={styles.detailValue}>{farmer.state || 'N/A'}</Text>
                   </View>
                   <View style={styles.detailRow}>
                     <Text style={styles.detailLabel}>LGA:</Text>
-                    <Text style={styles.detailValue}>{farmer.contactInfo.localGovernment}</Text>
+                    <Text style={styles.detailValue}>{farmer.lga || 'N/A'}</Text>
                   </View>
                   <View style={styles.detailRow}>
                     <Text style={styles.detailLabel}>Ward:</Text>
-                    <Text style={styles.detailValue}>{farmer.contactInfo.ward}</Text>
+                    <Text style={styles.detailValue}>{farmer.ward || 'N/A'}</Text>
                   </View>
 
                   <Text style={styles.sectionTitle}>Banking Information</Text>
                   <View style={styles.detailRow}>
                     <Text style={styles.detailLabel}>Bank:</Text>
-                    <Text style={styles.detailValue}>{farmer.bankInfo.bankName}</Text>
-                  </View>
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Account Name:</Text>
-                    <Text style={styles.detailValue}>{farmer.bankInfo.accountName}</Text>
+                    <Text style={styles.detailValue}>{farmer.bankName || 'N/A'}</Text>
                   </View>
                   <View style={styles.detailRow}>
                     <Text style={styles.detailLabel}>Account Number:</Text>
-                    <Text style={styles.detailValue}>{farmer.bankInfo.accountNumber}</Text>
+                    <Text style={styles.detailValue}>{farmer.accountNumber || 'N/A'}</Text>
+                  </View>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>BVN:</Text>
+                    <Text style={styles.detailValue}>{farmer.bvn || 'N/A'}</Text>
                   </View>
 
                   {farmer.farmInfo && (

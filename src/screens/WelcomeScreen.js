@@ -16,15 +16,15 @@ export default function WelcomeScreen({ navigation }) {
         {/* Logo/Header Section */}
         <View style={styles.header}>
           <View style={styles.logoContainer}>
-            <Ionicons name="leaf" size={80} color="#10b981" />
+            <Ionicons name="leaf" size={50} color="#10b981" />
           </View>
           <Text style={styles.title}>CCSA FIMS</Text>
           <Text style={styles.subtitle}>
             Farmers Information Management System
           </Text>
-          <Text style={styles.description}>
+          {/* <Text style={styles.description}>
             Register and manage Nigerian farmers' data with advanced features including geolocation, search, and certificate generation.
-          </Text>
+          </Text> */}
         </View>
 
         {/* Features Section */}
@@ -78,6 +78,7 @@ export default function WelcomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    padding: 8,
     backgroundColor: '#ffffff',
   },
   content: {
@@ -90,8 +91,8 @@ const styles = StyleSheet.create({
     marginBottom: 48,
   },
   logoContainer: {
-    width: 120,
-    height: 120,
+    width: 80,
+    height: 80,
     borderRadius: 60,
     backgroundColor: '#f0fdf4',
     justifyContent: 'center',
@@ -99,7 +100,7 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   title: {
-    fontSize: 36,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#1f2937',
     marginBottom: 8,

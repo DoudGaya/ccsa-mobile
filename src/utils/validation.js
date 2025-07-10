@@ -31,6 +31,7 @@ export const personalInfoSchema = z.object({
   employmentStatus: z.string().min(1, 'Employment status is required'),
   state: z.string().optional(),
   lga: z.string().optional(),
+  photoUrl: z.string().optional(), // Add photoUrl field
 });
 
 // Contact info schema

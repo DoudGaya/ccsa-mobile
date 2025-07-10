@@ -4,33 +4,52 @@ const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:3
 
 const getAuthToken = async () => {
   const user = auth.currentUser;
-  if (!user) throw new Error('User not authenticated');
-  return await user.getIdToken();
+  if (!user) {
+    console.log('❌ No authenticated user found in getAuthToken');
+    throw new Error('User not authenticated');
+  }
+  try {
+    const token = await user.getIdToken(true); // Force refresh
+    console.log('✅ Got auth token, length:', token.length);
+    return token;
+  } catch (error) {
+    console.error('❌ Error getting auth token:', error);
+    throw new Error('Failed to get authentication token');
+  }
 };
 
 const makeAuthenticatedRequest = async (url, options = {}) => {
-  const token = await getAuthToken();
-  const response = await fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-      ...options.headers,
-    },
-  });
-  
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
-    console.log('API Error Response:', errorData);
+  try {
+    const token = await getAuthToken();
+    console.log('🌐 Making request to:', url);
     
-    // Create a more detailed error
-    const error = new Error(errorData.message || errorData.error || 'Request failed');
-    error.status = response.status;
-    error.data = errorData;
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        ...options.headers,
+      },
+    });
+    
+    console.log('📊 Response status:', response.status);
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+      console.log('❌ API Error Response:', errorData);
+      
+      // Create a more detailed error
+      const error = new Error(errorData.message || errorData.error || `Request failed with status ${response.status}`);
+      error.status = response.status;
+      error.data = errorData;
+      throw error;
+    }
+    
+    return response.json();
+  } catch (error) {
+    console.error('❌ makeAuthenticatedRequest error:', error);
     throw error;
   }
-  
-  return response.json();
 };
 
 export const farmerService = {
@@ -44,6 +63,8 @@ export const farmerService = {
   },
 
   async getFarmers(page = 1, limit = 10, search = '') {
+    console.log('🔍 farmerService.getFarmers called with:', { page, limit, search });
+    
     const queryParams = new URLSearchParams({
       page: page.toString(),
       limit: limit.toString(),
@@ -51,8 +72,24 @@ export const farmerService = {
     });
     
     const url = `${API_BASE_URL}/farmers?${queryParams}`;
-    const data = await makeAuthenticatedRequest(url);
-    return data;
+    console.log('🔍 Fetching from URL:', url);
+    
+    try {
+      const data = await makeAuthenticatedRequest(url);
+      console.log('🔍 Raw API response:', data);
+      console.log('🔍 Response type:', typeof data);
+      console.log('🔍 Response keys:', Object.keys(data || {}));
+      
+      if (data?.farmers) {
+        console.log('🔍 Farmers array length:', data.farmers.length);
+        console.log('🔍 First farmer sample:', data.farmers[0]);
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('🔍 Error in getFarmers:', error);
+      throw error;
+    }
   },
 
   async getFarmerById(id) {

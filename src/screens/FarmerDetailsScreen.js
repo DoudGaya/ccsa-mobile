@@ -10,29 +10,61 @@ import {
   Image,
 } from 'react-native';
 import { useFarmerStore } from '../store/farmerStore';
+import { farmService } from '../services/farmService';
 import { Ionicons } from '@expo/vector-icons';
 import QRCode from 'react-native-qrcode-svg';
 
 const FarmerDetailsScreen = ({ route, navigation }) => {
-  const { farmerId } = route.params;
+  const { farmerId, farmer } = route.params;
   const { farmers, loading, fetchFarmers } = useFarmerStore();
-  const [farmer, setFarmer] = useState(null);
+  const [currentFarmer, setCurrentFarmer] = useState(farmer || null);
+  const [farmerFarms, setFarmerFarms] = useState([]);
+  const [loadingFarms, setLoadingFarms] = useState(false);
 
   useEffect(() => {
-    const farmerData = farmers.find(f => f.id === farmerId);
-    if (farmerData) {
-      setFarmer(farmerData);
+    if (farmer) {
+      setCurrentFarmer(farmer);
     } else {
-      fetchFarmers();
+      // Try to find farmer in the store
+      const farmerData = farmers.find(f => f.id === farmerId);
+      if (farmerData) {
+        setCurrentFarmer(farmerData);
+      } else {
+        fetchFarmers();
+      }
     }
-  }, [farmerId, farmers]);
+    
+    // Load farms for this farmer
+    loadFarms();
+  }, [farmerId, farmer, farmers]);
+
+  const loadFarms = async () => {
+    if (!farmerId) return;
+    
+    try {
+      setLoadingFarms(true);
+      console.log('Loading farms for farmer:', farmerId);
+      const farms = await farmService.getFarmsByFarmer(farmerId);
+      console.log('Farms loaded:', farms);
+      setFarmerFarms(farms || []);
+    } catch (error) {
+      console.error('Error loading farms:', error);
+      setFarmerFarms([]);
+    } finally {
+      setLoadingFarms(false);
+    }
+  };
 
   const handleEditFarmer = () => {
-    navigation.navigate('AddFarmer', { farmerData: farmer, isEdit: true });
+    navigation.navigate('AddFarmer', { farmerData: currentFarmer, isEdit: true });
   };
 
   const handleGenerateCertificate = () => {
-    navigation.navigate('Certificate', { farmer });
+    navigation.navigate('Certificate', { farmer: currentFarmer });
+  };
+
+  const handleAddFarm = () => {
+    navigation.navigate('AddFarm', { farmerId, farmer: currentFarmer });
   };
 
   const handleDeleteFarmer = () => {
@@ -57,7 +89,7 @@ const FarmerDetailsScreen = ({ route, navigation }) => {
     );
   };
 
-  if (loading || !farmer) {
+  if (loading || !currentFarmer) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#28a745" />
@@ -72,14 +104,14 @@ const FarmerDetailsScreen = ({ route, navigation }) => {
         <View style={styles.profileSection}>
           <View style={styles.avatar}>
             <Text style={styles.avatarText}>
-              {farmer.firstName?.charAt(0)}{farmer.lastName?.charAt(0)}
+              {currentFarmer.firstName?.charAt(0)}{currentFarmer.lastName?.charAt(0)}
             </Text>
           </View>
           <View style={styles.nameSection}>
             <Text style={styles.name}>
-              {farmer.firstName} {farmer.middleName} {farmer.lastName}
+              {currentFarmer.firstName} {currentFarmer.middleName} {currentFarmer.lastName}
             </Text>
-            <Text style={styles.nin}>NIN: {farmer.nin}</Text>
+            <Text style={styles.nin}>NIN: {currentFarmer.nin}</Text>
           </View>
         </View>
         
@@ -87,6 +119,11 @@ const FarmerDetailsScreen = ({ route, navigation }) => {
           <TouchableOpacity style={styles.editButton} onPress={handleEditFarmer}>
             <Ionicons name="create-outline" size={20} color="#fff" />
             <Text style={styles.buttonText}>Edit</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity style={styles.addFarmButton} onPress={handleAddFarm}>
+            <Ionicons name="add-circle-outline" size={20} color="#fff" />
+            <Text style={styles.buttonText}>Add Farm</Text>
           </TouchableOpacity>
           
           <TouchableOpacity style={styles.certificateButton} onPress={handleGenerateCertificate}>
@@ -106,11 +143,11 @@ const FarmerDetailsScreen = ({ route, navigation }) => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Personal Information</Text>
           <View style={styles.infoGrid}>
-            <InfoItem label="Date of Birth" value={farmer.dateOfBirth} />
-            <InfoItem label="Gender" value={farmer.gender} />
-            <InfoItem label="Phone" value={farmer.phone} />
-            <InfoItem label="Email" value={farmer.email} />
-            <InfoItem label="Marital Status" value={farmer.maritalStatus} />
+            <InfoItem label="Date of Birth" value={currentFarmer.dateOfBirth} />
+            <InfoItem label="Gender" value={currentFarmer.gender} />
+            <InfoItem label="Phone" value={currentFarmer.phone} />
+            <InfoItem label="Email" value={currentFarmer.email} />
+            <InfoItem label="Marital Status" value={currentFarmer.maritalStatus} />
           </View>
         </View>
 
@@ -118,10 +155,10 @@ const FarmerDetailsScreen = ({ route, navigation }) => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Address Information</Text>
           <View style={styles.infoGrid}>
-            <InfoItem label="State" value={farmer.state} />
-            <InfoItem label="LGA" value={farmer.lga} />
-            <InfoItem label="Ward" value={farmer.ward} />
-            <InfoItem label="Address" value={farmer.address} fullWidth />
+            <InfoItem label="State" value={currentFarmer.state} />
+            <InfoItem label="LGA" value={currentFarmer.lga} />
+            <InfoItem label="Ward" value={currentFarmer.ward} />
+            <InfoItem label="Address" value={currentFarmer.address} fullWidth />
           </View>
         </View>
 
@@ -129,17 +166,60 @@ const FarmerDetailsScreen = ({ route, navigation }) => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Bank Information</Text>
           <View style={styles.infoGrid}>
-            <InfoItem label="Bank Name" value={farmer.bankName} />
-            <InfoItem label="Account Number" value={farmer.accountNumber} />
-            <InfoItem label="BVN" value={farmer.bvn} />
+            <InfoItem label="Bank Name" value={currentFarmer.bankName} />
+            <InfoItem label="Account Number" value={currentFarmer.accountNumber} />
+            <InfoItem label="BVN" value={currentFarmer.bvn} />
           </View>
         </View>
 
+        {/* Farms Information */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Farms ({farmerFarms.length})</Text>
+            <TouchableOpacity style={styles.addFarmButtonSmall} onPress={handleAddFarm}>
+              <Ionicons name="add" size={20} color="#28a745" />
+              <Text style={styles.addFarmButtonText}>Add Farm</Text>
+            </TouchableOpacity>
+          </View>
+          
+          {loadingFarms ? (
+            <View style={styles.loadingFarms}>
+              <ActivityIndicator size="small" color="#28a745" />
+              <Text style={styles.loadingText}>Loading farms...</Text>
+            </View>
+          ) : farmerFarms.length > 0 ? (
+            farmerFarms.map((farm, index) => (
+              <View key={farm.id} style={styles.farmCard}>
+                <Text style={styles.farmTitle}>Farm {index + 1}</Text>
+                <View style={styles.farmDetails}>
+                  <InfoItem label="Primary Crop" value={farm.primaryCrop} />
+                  <InfoItem label="Farm Size" value={farm.farmSize ? `${farm.farmSize} hectares` : 'N/A'} />
+                  <InfoItem label="State" value={farm.farmState} />
+                  <InfoItem label="LGA" value={farm.farmLocalGovernment} />
+                  <InfoItem label="Ownership" value={farm.farmOwnership} />
+                  <InfoItem label="Experience" value={farm.farmingExperience ? `${farm.farmingExperience} years` : 'N/A'} />
+                </View>
+                {farm.farmLatitude && farm.farmLongitude && (
+                  <Text style={styles.coordinates}>
+                    📍 {farm.farmLatitude}, {farm.farmLongitude}
+                  </Text>
+                )}
+              </View>
+            ))
+          ) : (
+            <View style={styles.noFarms}>
+              <Ionicons name="leaf-outline" size={48} color="#ccc" />
+              <Text style={styles.noFarmsText}>No farms registered</Text>
+              <Text style={styles.noFarmsSubtext}>Tap "Add Farm" to register the first farm</Text>
+            </View>
+          )}
+        </View>
+
         {/* Referee Information */}
-        {farmer.referees && farmer.referees.length > 0 && (
+        {currentFarmer.referees && currentFarmer.referees.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Referee Information</Text>
-            {farmer.referees.map((referee, index) => (
+            {currentFarmer.referees.map((referee, index) => (
               <View key={index} style={styles.refereeCard}>
                 <Text style={styles.refereeTitle}>Referee {index + 1}</Text>
                 <InfoItem label="Name" value={`${referee.firstName} ${referee.lastName}`} />
@@ -150,19 +230,19 @@ const FarmerDetailsScreen = ({ route, navigation }) => {
           </View>
         )}
 
-        {/* Farm Information */}
-        {farmer.farmInfo && (
+        {/* Farm Information - Legacy support for old data structure */}
+        {currentFarmer.farmInfo && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Farm Information</Text>
+            <Text style={styles.sectionTitle}>Legacy Farm Information</Text>
             <View style={styles.infoGrid}>
-              <InfoItem label="Farm Size" value={`${farmer.farmInfo.farmSize} hectares`} />
-              <InfoItem label="Primary Crop" value={farmer.farmInfo.primaryCrop} />
-              <InfoItem label="Secondary Crop" value={farmer.farmInfo.secondaryCrop} />
-              <InfoItem label="Farming Experience" value={`${farmer.farmInfo.farmingExperience} years`} />
-              {farmer.farmInfo.latitude && farmer.farmInfo.longitude && (
+              <InfoItem label="Farm Size" value={`${currentFarmer.farmInfo.farmSize} hectares`} />
+              <InfoItem label="Primary Crop" value={currentFarmer.farmInfo.primaryCrop} />
+              <InfoItem label="Secondary Crop" value={currentFarmer.farmInfo.secondaryCrop} />
+              <InfoItem label="Farming Experience" value={`${currentFarmer.farmInfo.farmingExperience} years`} />
+              {currentFarmer.farmInfo.latitude && currentFarmer.farmInfo.longitude && (
                 <InfoItem 
                   label="Coordinates" 
-                  value={`${farmer.farmInfo.latitude}, ${farmer.farmInfo.longitude}`}
+                  value={`${currentFarmer.farmInfo.latitude}, ${currentFarmer.farmInfo.longitude}`}
                   fullWidth 
                 />
               )}
@@ -176,10 +256,11 @@ const FarmerDetailsScreen = ({ route, navigation }) => {
           <View style={styles.qrContainer}>
             <QRCode
               value={JSON.stringify({
-                nin: farmer.nin,
-                name: `${farmer.firstName} ${farmer.lastName}`,
-                phone: farmer.phone,
-                registrationDate: farmer.createdAt,
+                nin: currentFarmer.nin,
+                name: `${currentFarmer.firstName} ${currentFarmer.lastName}`,
+                phone: currentFarmer.phone,
+                registrationDate: currentFarmer.createdAt,
+                farmsCount: farmerFarms.length,
               })}
               size={150}
             />
@@ -260,30 +341,40 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#007bff',
     paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     borderRadius: 6,
     flex: 1,
-    marginRight: 8,
+    marginRight: 4,
   },
-  certificateButton: {
+  addFarmButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#28a745',
     paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     borderRadius: 6,
     flex: 1,
-    marginHorizontal: 4,
+    marginHorizontal: 2,
+  },
+  certificateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#17a2b8',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    flex: 1,
+    marginHorizontal: 2,
   },
   deleteButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#dc3545',
     paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     borderRadius: 6,
     flex: 1,
-    marginLeft: 8,
+    marginLeft: 4,
   },
   buttonText: {
     color: '#fff',
@@ -348,6 +439,75 @@ const styles = StyleSheet.create({
   qrContainer: {
     alignItems: 'center',
     padding: 20,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  addFarmButtonSmall: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#28a745',
+  },
+  addFarmButtonText: {
+    color: '#28a745',
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 4,
+  },
+  farmCard: {
+    backgroundColor: '#f8f9fa',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  farmTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#28a745',
+    marginBottom: 12,
+  },
+  farmDetails: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  coordinates: {
+    fontSize: 14,
+    color: '#6c757d',
+    marginTop: 8,
+    fontStyle: 'italic',
+  },
+  loadingFarms: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  noFarms: {
+    alignItems: 'center',
+    padding: 40,
+  },
+  noFarmsText: {
+    fontSize: 16,
+    color: '#6c757d',
+    marginTop: 8,
+    fontWeight: '500',
+  },
+  noFarmsSubtext: {
+    fontSize: 14,
+    color: '#adb5bd',
+    marginTop: 4,
+    textAlign: 'center',
   },
 });
 

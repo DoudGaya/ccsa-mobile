@@ -39,6 +39,7 @@ model Farmer {
   lga               String?   // birthlga from NIN API
   maritalStatus     String?
   employmentStatus  String?
+  photoUrl          String?   // Photo URL from NIN API
   
   // Contact Information (manual entry)
   phone             String    @unique
@@ -98,7 +99,7 @@ model Farm {
 
   // Farm Geospatial Information
   farmCoordinates    Json?     // GeoJSON format for farm boundaries
-  coordinateSystem   String?   // Coordinate system used (e.g., WGS84)
+  coordinateSystem   String?   @default("WGS84") // Coordinate system used (e.g., WGS84)
   farmArea           Float?    // Area in square meters or hectares
   farmElevation      Float?    // Elevation in meters above sea level
 

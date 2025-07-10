@@ -47,27 +47,29 @@ export default function SearchFarmerScreen({ navigation }) {
   const renderFarmerResult = ({ item: farmer }) => (
     <TouchableOpacity
       style={styles.resultCard}
-      onPress={() => navigation.navigate('FarmerDetails', { farmer })}
+      onPress={() => navigation.navigate('FarmerDetails', { farmerId: farmer.id, farmer })}
     >
       <View style={styles.cardHeader}>
         <View style={styles.avatarContainer}>
           <Text style={styles.avatarText}>
-            {farmer.personalInfo.firstName[0]}{farmer.personalInfo.lastName[0]}
+            {farmer.firstName[0]}{farmer.lastName[0]}
           </Text>
         </View>
         <View style={styles.farmerInfo}>
           <Text style={styles.farmerName}>
-            {farmer.personalInfo.firstName} {farmer.personalInfo.lastName}
+            {farmer.firstName} {farmer.lastName}
           </Text>
           <Text style={styles.farmerDetails}>
             NIN: {farmer.nin}
           </Text>
           <Text style={styles.farmerDetails}>
-            Phone: {farmer.personalInfo.phoneNumber}
+            Phone: {farmer.phone}
           </Text>
-          <Text style={styles.farmerDetails}>
-            Email: {farmer.personalInfo.email}
-          </Text>
+          {farmer.email && (
+            <Text style={styles.farmerDetails}>
+              Email: {farmer.email}
+            </Text>
+          )}
         </View>
         <View style={styles.cardActions}>
           <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
@@ -78,7 +80,7 @@ export default function SearchFarmerScreen({ navigation }) {
         <View style={styles.locationInfo}>
           <Ionicons name="location-outline" size={16} color="#6b7280" />
           <Text style={styles.locationText}>
-            {farmer.contactInfo.ward}, {farmer.contactInfo.localGovernment}, {farmer.contactInfo.state}
+            {farmer.ward && `${farmer.ward}, `}{farmer.lga && `${farmer.lga}, `}{farmer.state || 'Location not available'}
           </Text>
         </View>
         <Text style={styles.registrationDate}>

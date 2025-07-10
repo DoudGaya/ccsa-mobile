@@ -1,13 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   TextInput,
   StyleSheet,
+  TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Controller } from 'react-hook-form';
 import CustomSelect from '../common/CustomSelect';
+import * as Location from 'expo-location';
 
 // Nigerian states
 const NIGERIAN_STATES = [
@@ -61,7 +64,44 @@ const SAMPLE_CLUSTERS = [
   { label: 'South West', value: 'SOUTH_WEST' },
 ];
 
-export default function ContactInfoStep({ control, errors }) {
+export default function ContactInfoStep({ control, errors, setValue, watch }) {
+  const [loadingLocation, setLoadingLocation] = useState(false);
+  const coordinates = watch('contactInfo.coordinates');
+
+  const getCurrentLocation = async () => {
+    try {
+      setLoadingLocation(true);
+      
+      // Request permission
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Permission to access location was denied');
+        return;
+      }
+
+      // Get current location
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.High,
+      });
+
+      const coords = {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      };
+
+      setValue('contactInfo.coordinates', coords);
+      
+      Alert.alert(
+        'Location Captured', 
+        `Latitude: ${coords.latitude.toFixed(6)}\nLongitude: ${coords.longitude.toFixed(6)}`
+      );
+    } catch (error) {
+      console.error('Location error:', error);
+      Alert.alert('Error', 'Failed to get current location');
+    } finally {
+      setLoadingLocation(false);
+    }
+  };
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -294,6 +334,39 @@ export default function ContactInfoStep({ control, errors }) {
             <Text style={styles.errorText}>{errors.contactInfo.cluster.message}</Text>
           )}
         </View>
+
+        {/* GPS Coordinates for Farmer Location */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Farmer Location (GPS)</Text>
+          <TouchableOpacity
+            style={styles.locationButton}
+            onPress={getCurrentLocation}
+            disabled={loadingLocation}
+          >
+            <Ionicons
+              name={loadingLocation ? "sync" : "location"}
+              size={20}
+              color="#ffffff"
+            />
+            <Text style={styles.locationButtonText}>
+              {loadingLocation ? 'Getting Location...' : 'Capture Current Location'}
+            </Text>
+          </TouchableOpacity>
+          
+          {coordinates && (
+            <View style={styles.coordinatesDisplay}>
+              <Text style={styles.coordinatesText}>
+                Latitude: {coordinates.latitude.toFixed(6)}
+              </Text>
+              <Text style={styles.coordinatesText}>
+                Longitude: {coordinates.longitude.toFixed(6)}
+              </Text>
+            </View>
+          )}
+          <Text style={styles.helperText}>
+            This captures the farmer's current location for verification
+          </Text>
+        </View>
       </View>
 
       <View style={styles.info}>
@@ -383,5 +456,37 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     flex: 1,
     lineHeight: 20,
+  },
+  locationButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#2563eb',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  locationButtonText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
+  },
+  coordinatesDisplay: {
+    backgroundColor: '#f3f4f6',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  coordinatesText: {
+    fontSize: 14,
+    color: '#374151',
+    fontFamily: 'monospace',
+  },
+  helperText: {
+    fontSize: 12,
+    color: '#6b7280',
+    fontStyle: 'italic',
   },
 });

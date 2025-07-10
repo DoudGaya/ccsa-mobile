@@ -10,6 +10,7 @@ import {
   Image,
 } from 'react-native';
 import { useAuth } from '../store/AuthContext';
+import { analyticsService } from '../services/analyticsService';
 import { Ionicons } from '@expo/vector-icons';
 
 const ProfileScreen = ({ navigation }) => {
@@ -28,16 +29,29 @@ const ProfileScreen = ({ navigation }) => {
 
   const fetchStats = async () => {
     try {
-      // TODO: Implement actual stats fetching from backend
-      // For now, using mock data
+      console.log('📊 ProfileScreen: Fetching real agent statistics...');
+      const data = await analyticsService.getAgentStats();
       setStats({
-        totalFarmers: 245,
-        thisMonth: 32,
-        thisWeek: 8,
-        today: 3,
+        totalFarmers: data.totalFarmers || 0,
+        thisMonth: data.farmersThisMonth || 0,
+        thisWeek: data.farmersThisWeek || 0,
+        today: data.farmersToday || 0,
       });
+      console.log('📊 ProfileScreen: Stats updated:', data);
     } catch (error) {
-      console.error('Error fetching stats:', error);
+      console.error('❌ ProfileScreen: Error fetching stats:', error);
+      Alert.alert(
+        'Error', 
+        'Failed to load statistics. Please check your connection and try again.',
+        [{ text: 'OK' }]
+      );
+      // Fallback to zero stats
+      setStats({
+        totalFarmers: 0,
+        thisMonth: 0,
+        thisWeek: 0,
+        today: 0,
+      });
     } finally {
       setLoading(false);
     }
@@ -68,12 +82,17 @@ const ProfileScreen = ({ navigation }) => {
     );
   };
 
+  const handleRefreshStats = async () => {
+    setLoading(true);
+    await fetchStats();
+  };
+
   const handleEditProfile = () => {
     Alert.alert('Edit Profile', 'Profile editing will be implemented soon.');
   };
 
   const handleChangePassword = () => {
-    Alert.alert('Change Password', 'Password change will be implemented soon.');
+    navigation.navigate('ChangePassword');
   };
 
   const handleSettings = () => {
@@ -81,7 +100,7 @@ const ProfileScreen = ({ navigation }) => {
   };
 
   const handleSupport = () => {
-    Alert.alert('Support', 'For support, please contact: support@ccsa.gov.ng');
+    Alert.alert('Support', 'For support, please contact: abdulrahman.dauda@cosmopolitan.edu.ng');
   };
 
   if (loading) {
@@ -120,7 +139,20 @@ const ProfileScreen = ({ navigation }) => {
 
       {/* Stats Cards */}
       <View style={styles.statsSection}>
-        <Text style={styles.sectionTitle}>Registration Statistics</Text>
+        <View style={styles.statsSectionHeader}>
+          <Text style={styles.sectionTitle}>Registration Statistics</Text>
+          <TouchableOpacity 
+            style={styles.refreshButton} 
+            onPress={handleRefreshStats}
+            disabled={loading}
+          >
+            <Ionicons 
+              name="refresh" 
+              size={20} 
+              color={loading ? "#9ca3af" : "#2563eb"} 
+            />
+          </TouchableOpacity>
+        </View>
         <View style={styles.statsGrid}>
           <StatCard
             title="Total Farmers"
@@ -294,11 +326,21 @@ const styles = StyleSheet.create({
   statsSection: {
     padding: 20,
   },
+  statsSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 16,
+  },
+  refreshButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#f3f4f6',
   },
   statsGrid: {
     flexDirection: 'row',

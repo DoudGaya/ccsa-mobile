@@ -53,6 +53,7 @@ export default function AddFarmerScreen({ navigation }) {
     watch,
     formState: { errors },
     trigger,
+    reset,
   } = useForm({
     resolver: zodResolver(farmerSchema),
     defaultValues: {
@@ -67,6 +68,7 @@ export default function AddFarmerScreen({ navigation }) {
         employmentStatus: '',
         state: '',
         lga: '',
+        photoUrl: '', // Add photoUrl field
       },
       contactInfo: {
         phoneNumber: '',
@@ -266,7 +268,6 @@ export default function AddFarmerScreen({ navigation }) {
           { 
             text: 'Add Farm', 
             onPress: () => {
-              // Reset form before navigation
               console.log('Navigating to AddFarm with farmer:', farmer?.id);
               console.log('Farmer data for navigation:', {
                 id: farmer?.id,
@@ -281,12 +282,56 @@ export default function AddFarmerScreen({ navigation }) {
             }
           },
           { 
-            text: 'Done', 
+            text: 'Add Another Farmer', 
             onPress: () => {
-              // Reset form before navigation
-              console.log('Navigating to FarmersList');
-              navigation.navigate('FarmersList');
+              // Reset form and go back to step 1
+              console.log('Resetting form for new farmer');
+              setCurrentStep(1);
+              setNinValidated(false);
+              setNinData(null);
+              
+              // Reset all form values
+              reset({
+                nin: '',
+                personalInfo: {
+                  firstName: '',
+                  middleName: '',
+                  lastName: '',
+                  dateOfBirth: '',
+                  gender: '',
+                  maritalStatus: '',
+                  employmentStatus: '',
+                  state: '',
+                  lga: '',
+                  photoUrl: '', // Add photoUrl to reset
+                },
+                contactInfo: {
+                  phoneNumber: '',
+                  whatsAppNumber: '',
+                  email: '',
+                  address: '',
+                  state: '',
+                  localGovernment: '',
+                  ward: '',
+                  pollingUnit: '',
+                  cluster: '',
+                  coordinates: null,
+                },
+                bankInfo: {
+                  bvn: '',
+                  bankName: '',
+                  accountNumber: '',
+                  accountName: '',
+                },
+                referees: [
+                  { fullName: '', phoneNumber: '', relation: '' }
+                ]
+              });
             }
+          },
+          { 
+            text: 'View Farmers', 
+            onPress: () => navigation.navigate('FarmersList')
           }
         ]
       );
@@ -356,15 +401,24 @@ export default function AddFarmerScreen({ navigation }) {
         // Still continue with the main lookup in case the test endpoint doesn't work
       }
 
-      // Check if farmer already exists
+      // Check if farmer already exists with this NIN
+      console.log('Checking if farmer already exists with NIN:', nin);
       try {
         const existingFarmer = await farmerService.getFarmerByNin(nin);
         if (existingFarmer) {
-          throw new Error('A farmer with this NIN is already registered');
+          console.log('Found existing farmer:', existingFarmer);
+          // throw new Error(`This NIN has already been registered by another farmer. Farmer: ${existingFarmer.firstName} ${existingFarmer.lastName} (Phone: ${existingFarmer.phone})`);
         }
+        console.log('No existing farmer found with this NIN');
       } catch (error) {
-        console.log('Could not check existing farmer (might be auth issue):', error.message);
-        // Continue anyway if this fails due to auth
+        // If it's our specific "already registered" error, re-throw it
+        if (error.message.includes('already been registered')) {
+          throw error;
+        }
+        
+        // Log other errors but don't fail the lookup entirely
+        console.log('Error checking existing farmer:', error.message);
+        // Don't throw here - this might be due to auth issues or other problems
       }
 
       // Try NIN lookup
@@ -382,6 +436,7 @@ export default function AddFarmerScreen({ navigation }) {
       setValue('personalInfo.gender', ninData.gender?.toUpperCase() || '');
       setValue('personalInfo.maritalStatus', ninData.maritalStatus || '');
       setValue('personalInfo.employmentStatus', ninData.employmentStatus || '');
+      setValue('personalInfo.photoUrl', ninData.photoUrl || ''); // Set photoUrl from NIN data
       
       // Address information from NIN data (set both personalInfo and contactInfo)
       setValue('personalInfo.state', ninData.state || '');

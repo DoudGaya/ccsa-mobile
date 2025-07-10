@@ -1,4 +1,4 @@
-import { authMiddleware } from '../../../lib/authMiddleware';
+import { authMiddleware } from '../../../../lib/authMiddleware';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();

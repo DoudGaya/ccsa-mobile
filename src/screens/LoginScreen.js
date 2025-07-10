@@ -21,11 +21,12 @@ import LoadingScreen from './LoadingScreen';
 export default function LoginScreen({ navigation }) {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { signIn } = useAuth();
+  const { signIn, resetPassword } = useAuth();
 
   const {
     control,
     handleSubmit,
+    getValues,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(loginSchema),
@@ -44,6 +45,48 @@ export default function LoginScreen({ navigation }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleResetPassword = async () => {
+    const email = getValues('email');
+    
+    if (!email) {
+      Alert.alert(
+        'Email Required', 
+        'Please enter your email address first, then try reset password.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    Alert.alert(
+      'Reset Password',
+      `Send password reset email to ${email}?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Send',
+          onPress: async () => {
+            try {
+              setLoading(true);
+              await resetPassword(email);
+              Alert.alert(
+                'Email Sent',
+                'Password reset email has been sent. Please check your inbox and follow the instructions.',
+                [{ text: 'OK' }]
+              );
+            } catch (error) {
+              Alert.alert(
+                'Reset Failed', 
+                error.message || 'Failed to send reset email. Please try again.'
+              );
+            } finally {
+              setLoading(false);
+            }
+          }
+        }
+      ]
+    );
   };
 
   if (loading) {
@@ -147,6 +190,15 @@ export default function LoginScreen({ navigation }) {
               disabled={loading}
             >
               <Text style={styles.loginButtonText}>Sign In</Text>
+            </TouchableOpacity>
+
+            {/* Forgot Password Link */}
+            <TouchableOpacity 
+              style={styles.forgotPasswordContainer}
+              onPress={handleResetPassword}
+              disabled={loading}
+            >
+              <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
             </TouchableOpacity>
 
             {/* Register Link */}
@@ -253,12 +305,21 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     marginTop: 16,
-    marginBottom: 32,
+    marginBottom: 16,
   },
   loginButtonText: {
     color: '#ffffff',
     fontSize: 18,
     fontWeight: '600',
+  },
+  forgotPasswordContainer: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  forgotPasswordText: {
+    fontSize: 16,
+    color: '#6b7280',
+    textDecorationLine: 'underline',
   },
   registerContainer: {
     flexDirection: 'row',

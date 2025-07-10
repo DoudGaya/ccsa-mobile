@@ -285,9 +285,9 @@ NODE_ENV="production"
    - Check device compatibility
 
 ### Support Contacts
-- Technical Support: tech@ccsa.gov.ng
+- Technical Support: tech@ccsa.cosmopolitan.edu.ng
 - Emergency Contact: +234-xxx-xxx-xxxx
-- Documentation: https://docs.ccsa.gov.ng
+- Documentation: https://docs.ccsa.cosmopolitan.edu.ng
 
 ## Post-Deployment Tasks
 

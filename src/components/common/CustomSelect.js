@@ -54,50 +54,50 @@ const CustomSelect = ({
 
         <Modal
           animationType="slide"
-          transparent={true}
+          presentationStyle="pageSheet"
           visible={modalVisible}
           onRequestClose={() => setModalVisible(false)}
         >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Select Option</Text>
-                <TouchableOpacity
-                  onPress={() => setModalVisible(false)}
-                  style={styles.closeButton}
-                >
-                  <Ionicons name="close" size={24} color="#6b7280" />
-                </TouchableOpacity>
-              </View>
-              
-              <FlatList
-                data={options}
-                keyExtractor={(item) => item.value}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={[
-                      styles.optionItem,
-                      item.value === selectedValue && styles.selectedOption
-                    ]}
-                    onPress={() => {
-                      onValueChange(item.value);
-                      setModalVisible(false);
-                    }}
-                  >
-                    <Text style={[
-                      styles.optionText,
-                      item.value === selectedValue && styles.selectedOptionText
-                    ]}>
-                      {item.label}
-                    </Text>
-                    {item.value === selectedValue && (
-                      <Ionicons name="checkmark" size={20} color="#2563eb" />
-                    )}
-                  </TouchableOpacity>
-                )}
-                style={styles.optionsList}
-              />
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <TouchableOpacity
+                onPress={() => setModalVisible(false)}
+                style={styles.closeButton}
+              >
+                <Ionicons name="close" size={24} color="#374151" />
+              </TouchableOpacity>
+              <Text style={styles.modalTitle}>Select Option</Text>
+              <View style={styles.headerSpacer} />
             </View>
+            
+            <FlatList
+              data={options}
+              keyExtractor={(item) => item.value}
+              renderItem={({ item }) => (
+                <TouchableOpacity
+                  style={[
+                    styles.optionItem,
+                    item.value === selectedValue && styles.selectedOption
+                  ]}
+                  onPress={() => {
+                    onValueChange(item.value);
+                    setModalVisible(false);
+                  }}
+                >
+                  <Text style={[
+                    styles.optionText,
+                    item.value === selectedValue && styles.selectedOptionText
+                  ]}>
+                    {item.label}
+                  </Text>
+                  {item.value === selectedValue && (
+                    <Ionicons name="checkmark" size={20} color="#2563eb" />
+                  )}
+                </TouchableOpacity>
+              )}
+              style={styles.optionsList}
+              showsVerticalScrollIndicator={false}
+            />
           </View>
         </Modal>
       </View>
@@ -140,12 +140,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 16,
     borderWidth: 1,
     borderColor: '#d1d5db',
-    borderRadius: 8,
-    backgroundColor: '#ffffff',
-    minHeight: 48,
+    borderRadius: 12,
+    backgroundColor: '#f9fafb',
+    minHeight: 56,
   },
   selectButtonError: {
     borderColor: '#ef4444',

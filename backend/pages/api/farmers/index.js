@@ -1,21 +1,37 @@
 import prisma from '../../../lib/prisma';
 import { farmerSchema, refereeSchema } from '../../../lib/validation';
-import { authMiddleware } from '../../../lib/auth';
+import { authMiddleware } from '../../../lib/authMiddleware';
 
-// GET /api/farmers - Get all farmers with pagination and search
-export default authMiddleware(async function handler(req, res) {
-  const { method } = req;
+export default async function handler(req, res) {
+  // Enable CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-  switch (method) {
-    case 'GET':
-      return await getFarmers(req, res);
-    case 'POST':
-      return await createFarmer(req, res);
-    default:
-      res.setHeader('Allow', ['GET', 'POST']);
-      return res.status(405).end(`Method ${method} Not Allowed`);
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
   }
-});
+
+  try {
+    // Apply authentication middleware
+    await authMiddleware(req, res);
+    
+    const { method } = req;
+
+    switch (method) {
+      case 'GET':
+        return await getFarmers(req, res);
+      case 'POST':
+        return await createFarmer(req, res);
+      default:
+        res.setHeader('Allow', ['GET', 'POST']);
+        return res.status(405).end(`Method ${method} Not Allowed`);
+    }
+  } catch (error) {
+    console.error('Farmers API error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+}
 
 async function getFarmers(req, res) {
   try {
@@ -31,6 +47,7 @@ async function getFarmers(req, res) {
 
     const whereClause = {
       status,
+      agentId: req.user.uid, // Only return farmers registered by the current user
       ...(state && { state }),
       ...(search && {
         OR: [
@@ -116,6 +133,7 @@ async function createFarmer(req, res) {
       lga: personalInfo.lga || contactInfo.localGovernment,
       maritalStatus: personalInfo.maritalStatus,
       employmentStatus: personalInfo.employmentStatus,
+      photoUrl: personalInfo.photoUrl || null, // Add photoUrl from NIN data
       // Contact info (manual entry)
       phone: contactInfo.phoneNumber,
       email: contactInfo.email || null,
@@ -180,19 +198,19 @@ async function createFarmer(req, res) {
     }
 
     // Create farmer with referees
-    console.log('Creating farmer with agentId:', req.user.id);
+    console.log('Creating farmer with agentId:', req.user.uid);
     console.log('Farmer data preview:', {
       nin: farmerData.nin,
       firstName: farmerData.firstName,
       lastName: farmerData.lastName,
       phone: farmerData.phone,
-      agentId: req.user.id,
+      agentId: req.user.uid,
     });
     
     const farmer = await prisma.farmer.create({
       data: {
         ...farmerData,
-        agentId: req.user.id,
+        agentId: req.user.uid, // Use uid instead of id
         referees: {
           create: validatedReferees,
         },

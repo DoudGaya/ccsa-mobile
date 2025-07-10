@@ -11,6 +11,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { Controller } from 'react-hook-form';
 import { Picker } from '@react-native-picker/picker';
 import * as Location from 'expo-location';
+import CropSelect from '../common/CropSelect';
+import CustomSelect from '../common/CustomSelect';
+import FarmPolygonMapper from '../common/FarmPolygonMapper';
 
 const FARM_CATEGORIES = [
   { label: 'Select Farm Category', value: '' },
@@ -44,7 +47,7 @@ const CROPS = [
   'Sorghum', 'Millet', 'Cowpea', 'Soybean', 'Sweet Potato', 'Irish Potato',
 ];
 
-export default function FarmInfoStep({ control, errors, setValue, watch }) {
+export default function FarmInfoStep({ control, errors, setValue, watch, showTitle = true }) {
   const [loadingLocation, setLoadingLocation] = useState(false);
   const [coordinates, setCoordinates] = useState(watch('farmInfo.coordinates'));
 
@@ -80,23 +83,17 @@ export default function FarmInfoStep({ control, errors, setValue, watch }) {
     }
   };
 
-  const startPolygonCapture = () => {
-    Alert.alert(
-      'Polygon Capture',
-      'Walk around the farm boundary and tap "Add Point" at each corner. This feature would integrate with a mapping component in a full implementation.',
-      [{ text: 'OK' }]
-    );
-  };
-
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Ionicons name="leaf-outline" size={48} color="#10b981" />
-        <Text style={styles.title}>Farm Information</Text>
-        <Text style={styles.description}>
-          Add farm details (Optional - can be completed later)
-        </Text>
-      </View>
+      {showTitle && (
+        <View style={styles.header}>
+          <Ionicons name="leaf-outline" size={48} color="#10b981" />
+          <Text style={styles.title}>Farm Information</Text>
+          <Text style={styles.description}>
+            Add farm details (Optional - can be completed later)
+          </Text>
+        </View>
+      )}
 
       <View style={styles.form}>
         {/* Farm Location */}
@@ -151,23 +148,18 @@ export default function FarmInfoStep({ control, errors, setValue, watch }) {
             control={control}
             name="farmInfo.farmCategory"
             render={({ field: { onChange, value } }) => (
-              <View style={styles.pickerContainer}>
-                <Picker
-                  selectedValue={value}
-                  onValueChange={onChange}
-                  style={styles.picker}
-                >
-                  {FARM_CATEGORIES.map((option) => (
-                    <Picker.Item
-                      key={option.value}
-                      label={option.label}
-                      value={option.value}
-                    />
-                  ))}
-                </Picker>
-              </View>
+              <CustomSelect
+                options={FARM_CATEGORIES}
+                selectedValue={value}
+                onValueChange={onChange}
+                placeholder="Select Farm Category"
+                error={!!errors?.farmInfo?.farmCategory}
+              />
             )}
           />
+          {errors?.farmInfo?.farmCategory && (
+            <Text style={styles.errorText}>{errors.farmInfo.farmCategory.message}</Text>
+          )}
         </View>
 
         {/* Landforms */}
@@ -212,23 +204,18 @@ export default function FarmInfoStep({ control, errors, setValue, watch }) {
             control={control}
             name="farmInfo.farmOwnership"
             render={({ field: { onChange, value } }) => (
-              <View style={styles.pickerContainer}>
-                <Picker
-                  selectedValue={value}
-                  onValueChange={onChange}
-                  style={styles.picker}
-                >
-                  {FARM_OWNERSHIP.map((option) => (
-                    <Picker.Item
-                      key={option.value}
-                      label={option.label}
-                      value={option.value}
-                    />
-                  ))}
-                </Picker>
-              </View>
+              <CustomSelect
+                options={FARM_OWNERSHIP}
+                selectedValue={value}
+                onValueChange={onChange}
+                placeholder="Select Ownership Type"
+                error={!!errors?.farmInfo?.farmOwnership}
+              />
             )}
           />
+          {errors?.farmInfo?.farmOwnership && (
+            <Text style={styles.errorText}>{errors.farmInfo.farmOwnership.message}</Text>
+          )}
         </View>
 
         {/* Primary Crop */}
@@ -237,30 +224,18 @@ export default function FarmInfoStep({ control, errors, setValue, watch }) {
           <Controller
             control={control}
             name="farmInfo.primaryCrop"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <View style={styles.inputContainer}>
-                <Ionicons name="leaf" size={20} color="#9ca3af" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g., Maize, Rice, Cassava"
-                  value={value}
-                  onChangeText={onChange}
-                  onBlur={onBlur}
-                />
-              </View>
+            render={({ field: { onChange, value } }) => (
+              <CropSelect
+                selectedValue={value}
+                onValueChange={onChange}
+                placeholder="Select primary crop"
+                error={!!errors.farmInfo?.primaryCrop}
+              />
             )}
           />
-          <View style={styles.cropSuggestions}>
-            {CROPS.slice(0, 6).map((crop) => (
-              <TouchableOpacity
-                key={crop}
-                style={styles.cropButton}
-                onPress={() => setValue('farmInfo.primaryCrop', crop)}
-              >
-                <Text style={styles.cropButtonText}>{crop}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          {errors.farmInfo?.primaryCrop && (
+            <Text style={styles.errorText}>{errors.farmInfo.primaryCrop.message}</Text>
+          )}
         </View>
 
         {/* Secondary Crop */}
@@ -269,19 +244,18 @@ export default function FarmInfoStep({ control, errors, setValue, watch }) {
           <Controller
             control={control}
             name="farmInfo.secondaryCrop"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <View style={styles.inputContainer}>
-                <Ionicons name="leaf" size={20} color="#9ca3af" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Secondary crop (optional)"
-                  value={value}
-                  onChangeText={onChange}
-                  onBlur={onBlur}
-                />
-              </View>
+            render={({ field: { onChange, value } }) => (
+              <CropSelect
+                selectedValue={value}
+                onValueChange={onChange}
+                placeholder="Select secondary crop (optional)"
+                error={!!errors.farmInfo?.secondaryCrop}
+              />
             )}
           />
+          {errors.farmInfo?.secondaryCrop && (
+            <Text style={styles.errorText}>{errors.farmInfo.secondaryCrop.message}</Text>
+          )}
         </View>
 
         {/* Farm Season */}
@@ -291,23 +265,18 @@ export default function FarmInfoStep({ control, errors, setValue, watch }) {
             control={control}
             name="farmInfo.farmSeason"
             render={({ field: { onChange, value } }) => (
-              <View style={styles.pickerContainer}>
-                <Picker
-                  selectedValue={value}
-                  onValueChange={onChange}
-                  style={styles.picker}
-                >
-                  {FARM_SEASONS.map((option) => (
-                    <Picker.Item
-                      key={option.value}
-                      label={option.label}
-                      value={option.value}
-                    />
-                  ))}
-                </Picker>
-              </View>
+              <CustomSelect
+                options={FARM_SEASONS}
+                selectedValue={value}
+                onValueChange={onChange}
+                placeholder="Select Farm Season"
+                error={!!errors?.farmInfo?.farmSeason}
+              />
             )}
           />
+          {errors?.farmInfo?.farmSeason && (
+            <Text style={styles.errorText}>{errors.farmInfo.farmSeason.message}</Text>
+          )}
         </View>
 
         {/* GPS Coordinates */}
@@ -343,13 +312,12 @@ export default function FarmInfoStep({ control, errors, setValue, watch }) {
         {/* Farm Polygon */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Farm Boundary</Text>
-          <TouchableOpacity
-            style={styles.polygonButton}
-            onPress={startPolygonCapture}
-          >
-            <Ionicons name="map-outline" size={20} color="#2563eb" />
-            <Text style={styles.polygonButtonText}>Add Farm Polygon</Text>
-          </TouchableOpacity>
+          <FarmPolygonMapper
+            onPolygonUpdate={(polygon) => {
+              setValue('farmPolygon', polygon);
+            }}
+            initialPolygon={watch('farmPolygon') || []}
+          />
           <Text style={styles.helperText}>
             Walk around farm boundary to capture the area
           </Text>
@@ -516,6 +484,11 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     marginTop: 4,
     fontStyle: 'italic',
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#ef4444',
+    marginTop: 4,
   },
   info: {
     backgroundColor: '#f0fdf4',

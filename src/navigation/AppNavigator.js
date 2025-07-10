@@ -18,6 +18,7 @@ import CertificateScreen from '../screens/CertificateScreen';
 import FarmerDetailsScreen from '../screens/FarmerDetailsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import AnalyticsScreen from '../screens/AnalyticsScreen';
+import ChangePasswordScreen from '../screens/ChangePasswordScreen';
 import LoadingScreen from '../screens/LoadingScreen';
 
 const Stack = createStackNavigator();
@@ -134,7 +135,18 @@ export default function AppNavigator() {
           <Stack.Screen 
             name="AddFarm" 
             component={AddFarmScreen}
-            options={{ headerShown: false }}
+            options={{ 
+              headerShown: true, 
+              title: 'Add Farm',
+              headerBackTitle: 'Back'
+            }}
+          />
+          <Stack.Screen 
+            name="ChangePassword" 
+            component={ChangePasswordScreen}
+            options={{ 
+              headerShown: false
+            }}
           />
         </>
       ) : (

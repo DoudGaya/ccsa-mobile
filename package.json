@@ -40,7 +40,9 @@
     "react-native-vector-icons": "^10.2.0",
     "tailwindcss": "^4.1.11",
     "zod": "^3.25.74",
-    "zustand": "^5.0.6"
+    "zustand": "^5.0.6",
+    "expo-file-system": "~18.1.11",
+    "expo-sharing": "~13.1.5"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",

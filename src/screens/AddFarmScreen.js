@@ -18,29 +18,40 @@ import { farmService } from '../services/farmService';
 import LoadingScreen from './LoadingScreen';
 import FarmInfoStep from '../components/forms/FarmInfoStep';
 
-// Farm validation schema
+// Farm validation schema - make everything optional since farm info is typically optional
 const farmSchema = z.object({
-  farmSize: z.string().optional(),
-  primaryCrop: z.string().optional(),
-  produceCategory: z.string().optional(),
-  farmOwnership: z.string().optional(),
-  farmState: z.string().optional(),
-  farmLocalGovernment: z.string().optional(),
-  farmingSeason: z.string().optional(),
-  farmWard: z.string().optional(),
-  farmPollingUnit: z.string().optional(),
-  secondaryCrop: z.string().optional(),
-  farmingExperience: z.string().optional(),
+  farmInfo: z.object({
+    farmLocation: z.string().optional(),
+    farmSize: z.string().optional(),
+    farmCategory: z.string().optional(),
+    landforms: z.string().optional(),
+    farmOwnership: z.string().optional(),
+    farmState: z.string().optional(),
+    farmLocalGovernment: z.string().optional(),
+    farmingSeason: z.string().optional(),
+    farmWard: z.string().optional(),
+    farmPollingUnit: z.string().optional(),
+    primaryCrop: z.string().optional(),
+    secondaryCrop: z.string().optional(),
+    farmingExperience: z.string().optional(),
+    farmSeason: z.string().optional(),
+    coordinates: z.object({
+      latitude: z.number(),
+      longitude: z.number(),
+    }).optional(),
+  }).optional(),
   farmLatitude: z.string().optional(),
   farmLongitude: z.string().optional(),
   farmPolygon: z.array(z.object({
     latitude: z.number(),
     longitude: z.number(),
+    timestamp: z.string().optional(),
+    accuracy: z.number().optional(),
   })).optional(),
   soilType: z.string().optional(),
   soilPH: z.string().optional(),
   soilFertility: z.string().optional(),
-  farmCoordinates: z.object({}).optional(),
+  farmCoordinates: z.any().optional(),
   coordinateSystem: z.string().optional(),
   farmArea: z.string().optional(),
   farmElevation: z.string().optional(),
@@ -48,7 +59,7 @@ const farmSchema = z.object({
   yieldSeason: z.string().optional(),
   crop: z.string().optional(),
   quantity: z.string().optional(),
-});
+}).passthrough(); // Allow additional fields that might be added by components
 
 export default function AddFarmScreen({ navigation, route }) {
   const { farmerId, farmer } = route.params || {};
@@ -69,21 +80,29 @@ export default function AddFarmScreen({ navigation, route }) {
   const {
     control,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(farmSchema),
     defaultValues: {
-      farmSize: '',
-      primaryCrop: '',
-      produceCategory: '',
-      farmOwnership: '',
-      farmState: '',
-      farmLocalGovernment: '',
-      farmingSeason: '',
-      farmWard: '',
-      farmPollingUnit: '',
-      secondaryCrop: '',
-      farmingExperience: '',
+      farmInfo: {
+        farmLocation: '',
+        farmSize: '',
+        farmCategory: '',
+        landforms: '',
+        farmOwnership: '',
+        farmState: '',
+        farmLocalGovernment: '',
+        farmingSeason: '',
+        farmWard: '',
+        farmPollingUnit: '',
+        primaryCrop: '',
+        secondaryCrop: '',
+        farmingExperience: '',
+        farmSeason: '',
+        coordinates: null,
+      },
       farmLatitude: '',
       farmLongitude: '',
       farmPolygon: [],
@@ -102,24 +121,56 @@ export default function AddFarmScreen({ navigation, route }) {
   });
 
   const onSubmit = async (data) => {
+    console.log('=== ADD FARM SUBMISSION START ===');
+    console.log('Form data received:', JSON.stringify(data, null, 2));
+    
     try {
       setLoading(true);
 
-      // Convert string numbers to actual numbers where needed
+      // Safety check
+      if (!farmerId || !farmer) {
+        console.error('Missing farmer information:', { farmerId, farmer });
+        throw new Error('Missing farmer information');
+      }
+
+      // Flatten the nested structure and convert string numbers to actual numbers
       const processedData = {
-        ...data,
-        farmSize: data.farmSize ? parseFloat(data.farmSize) : null,
-        farmingExperience: data.farmingExperience ? parseInt(data.farmingExperience) : null,
-        farmLatitude: data.farmLatitude ? parseFloat(data.farmLatitude) : null,
-        farmLongitude: data.farmLongitude ? parseFloat(data.farmLongitude) : null,
+        // Flatten farmInfo fields
+        farmLocation: data.farmInfo?.farmLocation || '',
+        farmSize: data.farmInfo?.farmSize ? parseFloat(data.farmInfo.farmSize) : null,
+        farmCategory: data.farmInfo?.farmCategory || '',
+        landforms: data.farmInfo?.landforms || '',
+        farmOwnership: data.farmInfo?.farmOwnership || '',
+        farmState: data.farmInfo?.farmState || '',
+        farmLocalGovernment: data.farmInfo?.farmLocalGovernment || '',
+        farmingSeason: data.farmInfo?.farmingSeason || '',
+        farmWard: data.farmInfo?.farmWard || '',
+        farmPollingUnit: data.farmInfo?.farmPollingUnit || '',
+        primaryCrop: data.farmInfo?.primaryCrop || '',
+        secondaryCrop: data.farmInfo?.secondaryCrop || '',
+        farmingExperience: data.farmInfo?.farmingExperience ? parseInt(data.farmInfo.farmingExperience) : null,
+        farmSeason: data.farmInfo?.farmSeason || '',
+        
+        // Include farm coordinates from farmInfo
+        farmLatitude: data.farmInfo?.coordinates?.latitude || (data.farmLatitude ? parseFloat(data.farmLatitude) : null),
+        farmLongitude: data.farmInfo?.coordinates?.longitude || (data.farmLongitude ? parseFloat(data.farmLongitude) : null),
+        
+        // Include other farm fields
+        farmPolygon: data.farmPolygon || [],
+        soilType: data.soilType || '',
         soilPH: data.soilPH ? parseFloat(data.soilPH) : null,
+        soilFertility: data.soilFertility || '',
+        farmCoordinates: data.farmInfo?.coordinates || data.farmCoordinates,
+        coordinateSystem: data.coordinateSystem || 'WGS84',
         farmArea: data.farmArea ? parseFloat(data.farmArea) : null,
         farmElevation: data.farmElevation ? parseFloat(data.farmElevation) : null,
         year: data.year ? parseFloat(data.year) : null,
+        yieldSeason: data.yieldSeason || '',
         crop: data.crop ? parseFloat(data.crop) : null,
         quantity: data.quantity ? parseFloat(data.quantity) : null,
       };
 
+      console.log('Creating farm with data:', processedData);
       await farmService.createFarm(farmerId, processedData);
       
       Alert.alert(
@@ -134,16 +185,57 @@ export default function AddFarmScreen({ navigation, route }) {
             }
           },
           { 
-            text: 'Done', 
-            onPress: () => navigation.navigate('FarmersList') 
+            text: 'View Farmer', 
+            onPress: () => navigation.navigate('FarmerDetails', { farmerId, farmer })
+          },
+          { 
+            text: 'Done (Add New Farmer)', 
+            onPress: () => {
+              // Navigate back to the tab navigator and then to AddFarmer tab
+              navigation.navigate('MainApp', { 
+                screen: 'MainTabs', 
+                params: { screen: 'AddFarmer' } 
+              });
+            }
           }
         ]
       );
     } catch (error) {
+      console.error('Farm creation error:', error);
       Alert.alert('Error', error.message || 'Failed to add farm');
     } finally {
       setLoading(false);
+      console.log('=== ADD FARM SUBMISSION END ===');
     }
+  };
+
+  // Add form validation error handler
+  const onFormError = (errors) => {
+    console.log('=== FORM VALIDATION ERRORS ===');
+    console.log('Validation errors:', JSON.stringify(errors, null, 2));
+    
+    // Get first error message to show user
+    const errorPaths = Object.keys(errors);
+    const firstErrorPath = errorPaths[0];
+    const firstError = errors[firstErrorPath];
+    const errorMessage = firstError?.message || 'Please check the form for errors';
+    
+    Alert.alert(
+      'Form Validation Error', 
+      `${firstErrorPath}: ${errorMessage}\n\nTotal errors: ${errorPaths.length}`,
+      [
+        { text: 'Fix Errors', style: 'cancel' },
+        { 
+          text: 'Submit Anyway', 
+          style: 'destructive',
+          onPress: () => {
+            // Force submission with current data
+            const currentData = watch();
+            onSubmit(currentData);
+          }
+        }
+      ]
+    );
   };
 
   if (loading) {
@@ -156,18 +248,6 @@ export default function AddFarmScreen({ navigation, route }) {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardAvoidingView}
       >
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => navigation.goBack()}
-          >
-            <Ionicons name="arrow-back" size={24} color="#333" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Add Farm</Text>
-          <View style={styles.headerRight} />
-        </View>
-
         {/* Farmer Info Summary */}
         <View style={styles.farmerSummary}>
           <Text style={styles.farmerSummaryTitle}>Adding farm for:</Text>
@@ -178,19 +258,31 @@ export default function AddFarmScreen({ navigation, route }) {
         </View>
 
         {/* Form */}
-        <ScrollView style={styles.formContainer}>
-          <FarmInfoStep
-            control={control}
-            errors={errors}
-            showTitle={false}
-          />
+        <ScrollView style={styles.formContainer} showsVerticalScrollIndicator={false}>
+          <View style={styles.formWrapper}>
+            <FarmInfoStep
+              control={control}
+              errors={errors}
+              setValue={setValue}
+              watch={watch}
+              showTitle={false}
+            />
+          </View>
         </ScrollView>
 
         {/* Submit Button */}
         <View style={styles.footer}>
           <TouchableOpacity
             style={styles.submitButton}
-            onPress={handleSubmit(onSubmit)}
+            onPress={() => {
+              console.log('Submit button pressed');
+              console.log('Form errors:', errors);
+              console.log('Has errors:', Object.keys(errors).length > 0);
+              
+              // Try form submission
+              const submitFunction = handleSubmit(onSubmit, onFormError);
+              submitFunction();
+            }}
             disabled={loading}
           >
             <Text style={styles.submitButtonText}>
@@ -206,72 +298,73 @@ export default function AddFarmScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f9fafb',
   },
   keyboardAvoidingView: {
     flex: 1,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 15,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  backButton: {
-    padding: 5,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  headerRight: {
-    width: 34,
-  },
   farmerSummary: {
-    backgroundColor: '#fff',
-    padding: 15,
-    marginBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    backgroundColor: '#ffffff',
+    padding: 20,
+    marginHorizontal: 16,
+    marginTop: 16,
+    marginBottom: 16,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   farmerSummaryTitle: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 5,
+    color: '#6b7280',
+    marginBottom: 8,
+    fontWeight: '500',
   },
   farmerName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#1f2937',
+    marginBottom: 4,
   },
   farmerNin: {
     fontSize: 14,
-    color: '#666',
-    marginTop: 2,
+    color: '#6b7280',
   },
   formContainer: {
     flex: 1,
   },
+  formWrapper: {
+    paddingHorizontal: 16,
+    paddingBottom: 20,
+  },
   footer: {
     padding: 20,
-    backgroundColor: '#fff',
+    backgroundColor: '#ffffff',
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    borderTopColor: '#e5e7eb',
   },
   submitButton: {
-    backgroundColor: '#4CAF50',
-    paddingVertical: 15,
-    borderRadius: 10,
+    backgroundColor: '#2563eb',
+    paddingVertical: 16,
+    borderRadius: 12,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   submitButtonText: {
-    color: '#fff',
+    color: '#ffffff',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
 });

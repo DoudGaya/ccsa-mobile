@@ -1,17 +1,25 @@
 import prisma from '../../../lib/prisma';
-import { searchSchema } from '../../../lib/validation';
-import { authMiddleware } from '../../../lib/auth';
+import { authMiddleware } from '../../../lib/authMiddleware';
 
-// GET /api/farmers/search - Search farmers
-export default authMiddleware(async function handler(req, res) {
-  const { method } = req;
+export default async function handler(req, res) {
+  // Enable CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
-  if (method !== 'GET') {
-    res.setHeader('Allow', ['GET']);
-    return res.status(405).end(`Method ${method} Not Allowed`);
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
   }
 
   try {
+    // Apply authentication middleware
+    await authMiddleware(req, res);
+    
+    if (req.method !== 'GET') {
+      res.setHeader('Allow', ['GET']);
+      return res.status(405).end(`Method ${req.method} Not Allowed`);
+    }
+
     const { query, type, limit = 10, offset = 0 } = req.query;
 
     if (!query) {
@@ -20,6 +28,7 @@ export default authMiddleware(async function handler(req, res) {
 
     let whereClause = {
       status: 'active',
+      agentId: req.user.uid, // Only return farmers registered by the current user
     };
 
     // Build search conditions based on type
@@ -86,4 +95,4 @@ export default authMiddleware(async function handler(req, res) {
     console.error('Error searching farmers:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
-});
+}

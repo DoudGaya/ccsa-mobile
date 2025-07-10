@@ -129,6 +129,7 @@ export const ninService = {
             lga: birthlga || residence_lga || '', // Use birthlga as primary, fallback to residence_lga
             maritalStatus: maritalstatus || '',
             employmentStatus: emplymentstatus || '',
+            photoUrl: photo || '', // Add photo URL from NIN API
             // Raw data for debugging
             _rawData: result.data
           };
@@ -230,6 +231,7 @@ export const ninService = {
             lga: birthlga || residence_lga || '', // Use birthlga as primary, fallback to residence_lga
             maritalStatus: maritalstatus || '',
             employmentStatus: emplymentstatus || '',
+            photoUrl: photo || '', // Add photo URL from NIN API
             // Raw data for debugging
             _rawData: authResult.data
           };

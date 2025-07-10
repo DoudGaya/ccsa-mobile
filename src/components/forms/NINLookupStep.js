@@ -48,21 +48,33 @@ export default function NINLookupStep({
       setLocalValidationSuccess(false);
       setHasError(true);
       
+      // Check if it's a duplicate NIN error
+      const isDuplicateNIN = error.message.includes('already been registered') || 
+                           error.message.includes('already exists');
+      
       // Check if it's a network timeout error
       const isNetworkError = error.message.includes('Network request timed out') || 
                            error.message.includes('network') || 
                            error.message.includes('timeout') ||
                            error.message.includes('Unable to connect');
       
-      const errorMsg = isNetworkError 
-        ? 'Network connection failed. Please check your internet connection and try again.'
-        : error.message || 'Unable to validate this NIN. Please check the number and try again.';
+      let errorMsg;
+      if (isDuplicateNIN) {
+        errorMsg = error.message; // Use the full message from the backend which includes farmer details
+      } else if (isNetworkError) {
+        errorMsg = 'Network connection failed. Please check your internet connection and try again.';
+      } else {
+        errorMsg = error.message || 'Unable to validate this NIN. Please check the number and try again.';
+      }
       
       setErrorMessage(errorMsg);
       
-      // Only show alert for non-network errors (network errors will show retry button)
-      if (!isNetworkError) {
-        Alert.alert('NIN Validation Failed', errorMsg);
+      // Show alert for duplicate NIN errors and non-network errors
+      if (isDuplicateNIN || !isNetworkError) {
+        Alert.alert(
+          isDuplicateNIN ? 'NIN Already Registered' : 'NIN Validation Failed', 
+          errorMsg
+        );
       }
     } finally {
       setIsLoading(false);
