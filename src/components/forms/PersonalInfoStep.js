@@ -36,7 +36,7 @@ export default function PersonalInfoStep({ control, errors }) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Ionicons name="person-outline" size={48} color="#2563eb" />
+        <Ionicons name="person-outline" size={48} color="#013358" />
         <Text style={styles.title}>Personal Information</Text>
         <Text style={styles.description}>
           Complete the farmer's personal details

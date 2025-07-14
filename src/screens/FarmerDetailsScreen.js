@@ -55,38 +55,37 @@ const FarmerDetailsScreen = ({ route, navigation }) => {
     }
   };
 
-  const handleEditFarmer = () => {
-    navigation.navigate('AddFarmer', { farmerData: currentFarmer, isEdit: true });
-  };
-
   const handleGenerateCertificate = () => {
-    navigation.navigate('Certificate', { farmer: currentFarmer });
+    // Pass only essential farmer data to avoid payload size issues
+    const farmerData = {
+      id: currentFarmer.id,
+      nin: currentFarmer.nin,
+      firstName: currentFarmer.firstName,
+      middleName: currentFarmer.middleName,
+      lastName: currentFarmer.lastName,
+      dateOfBirth: currentFarmer.dateOfBirth,
+      gender: currentFarmer.gender,
+      state: currentFarmer.state,
+      lga: currentFarmer.lga,
+      ward: currentFarmer.ward,
+      address: currentFarmer.address,
+      phone: currentFarmer.phone,
+      email: currentFarmer.email,
+      maritalStatus: currentFarmer.maritalStatus,
+      employmentStatus: currentFarmer.employmentStatus,
+      bankName: currentFarmer.bankName,
+      accountName: currentFarmer.accountName,
+      accountNumber: currentFarmer.accountNumber,
+      bvn: currentFarmer.bvn,
+      registrationDate: currentFarmer.registrationDate,
+      createdAt: currentFarmer.createdAt
+    };
+    
+    navigation.navigate('Certificate', { farmer: farmerData });
   };
 
   const handleAddFarm = () => {
     navigation.navigate('AddFarm', { farmerId, farmer: currentFarmer });
-  };
-
-  const handleDeleteFarmer = () => {
-    Alert.alert(
-      'Delete Farmer',
-      'Are you sure you want to delete this farmer? This action cannot be undone.',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            // TODO: Implement delete functionality
-            Alert.alert('Success', 'Farmer deleted successfully');
-            navigation.goBack();
-          },
-        },
-      ]
-    );
   };
 
   if (loading || !currentFarmer) {
@@ -116,11 +115,6 @@ const FarmerDetailsScreen = ({ route, navigation }) => {
         </View>
         
         <View style={styles.actionButtons}>
-          <TouchableOpacity style={styles.editButton} onPress={handleEditFarmer}>
-            <Ionicons name="create-outline" size={20} color="#fff" />
-            <Text style={styles.buttonText}>Edit</Text>
-          </TouchableOpacity>
-          
           <TouchableOpacity style={styles.addFarmButton} onPress={handleAddFarm}>
             <Ionicons name="add-circle-outline" size={20} color="#fff" />
             <Text style={styles.buttonText}>Add Farm</Text>
@@ -128,12 +122,7 @@ const FarmerDetailsScreen = ({ route, navigation }) => {
           
           <TouchableOpacity style={styles.certificateButton} onPress={handleGenerateCertificate}>
             <Ionicons name="document-text-outline" size={20} color="#fff" />
-            <Text style={styles.buttonText}>Certificate</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.deleteButton} onPress={handleDeleteFarmer}>
-            <Ionicons name="trash-outline" size={20} color="#fff" />
-            <Text style={styles.buttonText}>Delete</Text>
+            <Text style={styles.buttonText}>View Certificate</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -167,6 +156,7 @@ const FarmerDetailsScreen = ({ route, navigation }) => {
           <Text style={styles.sectionTitle}>Bank Information</Text>
           <View style={styles.infoGrid}>
             <InfoItem label="Bank Name" value={currentFarmer.bankName} />
+            <InfoItem label="Account Name" value={currentFarmer.accountName} />
             <InfoItem label="Account Number" value={currentFarmer.accountNumber} />
             <InfoItem label="BVN" value={currentFarmer.bvn} />
           </View>

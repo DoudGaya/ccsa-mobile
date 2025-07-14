@@ -16,7 +16,11 @@ export default function WelcomeScreen({ navigation }) {
         {/* Logo/Header Section */}
         <View style={styles.header}>
           <View style={styles.logoContainer}>
-            <Ionicons name="leaf" size={50} color="#10b981" />
+            <Image 
+              source={require('../../assets/logo-no-bg.50099d39.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
           </View>
           <Text style={styles.title}>CCSA FIMS</Text>
           <Text style={styles.subtitle}>
@@ -30,19 +34,19 @@ export default function WelcomeScreen({ navigation }) {
         {/* Features Section */}
         <View style={styles.features}>
           <View style={styles.feature}>
-            <Ionicons name="person-add" size={24} color="#2563eb" />
+            <Ionicons name="person-add" size={24} color="#013358" />
             <Text style={styles.featureText}>Register Farmers</Text>
           </View>
           <View style={styles.feature}>
-            <Ionicons name="location" size={24} color="#2563eb" />
+            <Ionicons name="location" size={24} color="#013358" />
             <Text style={styles.featureText}>GPS & Mapping</Text>
           </View>
           <View style={styles.feature}>
-            <Ionicons name="search" size={24} color="#2563eb" />
+            <Ionicons name="search" size={24} color="#013358" />
             <Text style={styles.featureText}>Search & Analytics</Text>
           </View>
           <View style={styles.feature}>
-            <Ionicons name="document" size={24} color="#2563eb" />
+            <Ionicons name="document" size={24} color="#013358" />
             <Text style={styles.featureText}>Generate Certificates</Text>
           </View>
         </View>
@@ -91,13 +95,17 @@ const styles = StyleSheet.create({
     marginBottom: 48,
   },
   logoContainer: {
-    width: 80,
-    height: 80,
+    width: 120,
+    height: 120,
     borderRadius: 60,
     backgroundColor: '#f0fdf4',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
+  },
+  logo: {
+    width: 100,
+    height: 100,
   },
   title: {
     fontSize: 20,
@@ -144,7 +152,7 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   primaryButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: '#013358',
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -160,10 +168,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: '#2563eb',
+    borderColor: '#013358',
   },
   secondaryButtonText: {
-    color: '#2563eb',
+    color: '#013358',
     fontSize: 18,
     fontWeight: '600',
   },

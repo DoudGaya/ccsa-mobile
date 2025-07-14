@@ -56,7 +56,10 @@ export default function ChangePasswordScreen({ navigation }) {
         [
           {
             text: 'OK',
-            onPress: () => navigation.goBack()
+            onPress: () => {
+              // Clear form and let user navigate back manually
+              clearForm();
+            }
           }
         ]
       );
@@ -98,10 +101,10 @@ export default function ChangePasswordScreen({ navigation }) {
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
-            <Ionicons name="arrow-back" size={24} color="#2563eb" />
+            <Ionicons name="arrow-back" size={24} color="#013358" />
           </TouchableOpacity>
           <View style={styles.headerContent}>
-            <Ionicons name="lock-closed-outline" size={48} color="#2563eb" />
+            <Ionicons name="lock-closed-outline" size={48} color="#013358" />
             <Text style={styles.title}>Change Password</Text>
             <Text style={styles.subtitle}>
               Update your account password
@@ -342,7 +345,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#2563eb',
+    backgroundColor: '#013358',
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderRadius: 12,

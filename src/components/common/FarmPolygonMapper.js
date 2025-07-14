@@ -255,7 +255,7 @@ export default function FarmPolygonMapper({ onPolygonUpdate, initialPolygon = []
 
           <ScrollView style={styles.modalContent}>
             <View style={styles.instructionsCard}>
-              <Ionicons name="information-circle" size={24} color="#2563eb" />
+              <Ionicons name="information-circle" size={24} color="#013358" />
               <View style={styles.instructionsText}>
                 <Text style={styles.instructionsTitle}>How to map your farm:</Text>
                 <Text style={styles.instructionsStep}>1. Walk to each corner of your farm</Text>
@@ -376,7 +376,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#2563eb',
+    backgroundColor: '#013358',
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
@@ -571,7 +571,7 @@ const styles = StyleSheet.create({
   pointNumber: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: '#2563eb',
+    color: '#013358',
     width: 24,
   },
   pointDetails: {

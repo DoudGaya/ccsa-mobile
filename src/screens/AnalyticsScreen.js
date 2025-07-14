@@ -81,6 +81,60 @@ const AnalyticsScreen = ({ navigation }) => {
       return acc;
     }, {});
 
+    // Daily registrations (last 7 days)
+    const dailyRegistrations = farmers.reduce((acc, farmer) => {
+      if (farmer.createdAt) {
+        const date = new Date(farmer.createdAt);
+        const today = new Date();
+        const diffTime = Math.abs(today - date);
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        if (diffDays <= 7) {
+          const dayName = date.toLocaleDateString('en', { weekday: 'short' });
+          acc[dayName] = (acc[dayName] || 0) + 1;
+        }
+      }
+      return acc;
+    }, {});
+
+    // Weekly registrations (last 8 weeks)
+    const weeklyRegistrations = farmers.reduce((acc, farmer) => {
+      if (farmer.createdAt) {
+        const date = new Date(farmer.createdAt);
+        const today = new Date();
+        const diffTime = Math.abs(today - date);
+        const diffWeeks = Math.ceil(diffTime / (1000 * 60 * 60 * 24 * 7));
+        
+        if (diffWeeks <= 8) {
+          const weekStart = new Date(date);
+          weekStart.setDate(date.getDate() - date.getDay());
+          const weekLabel = `Week ${weekStart.getDate()}/${weekStart.getMonth() + 1}`;
+          acc[weekLabel] = (acc[weekLabel] || 0) + 1;
+        }
+      }
+      return acc;
+    }, {});
+
+    // Time-based stats
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const weekStart = new Date(todayStart);
+    weekStart.setDate(weekStart.getDate() - 7);
+    const monthStart = new Date(todayStart);
+    monthStart.setDate(monthStart.getDate() - 30);
+
+    const todayCount = farmers.filter(farmer => 
+      farmer.createdAt && new Date(farmer.createdAt) >= todayStart
+    ).length;
+
+    const thisWeekCount = farmers.filter(farmer => 
+      farmer.createdAt && new Date(farmer.createdAt) >= weekStart
+    ).length;
+
+    const thisMonthCount = farmers.filter(farmer => 
+      farmer.createdAt && new Date(farmer.createdAt) >= monthStart
+    ).length;
+
     // Average farm size
     const farmSizes = farmers
       .filter(farmer => farmer.farmInfo?.farmSize)
@@ -104,6 +158,11 @@ const AnalyticsScreen = ({ navigation }) => {
       stateDistribution,
       cropDistribution,
       monthlyRegistrations,
+      dailyRegistrations,
+      weeklyRegistrations,
+      todayCount,
+      thisWeekCount,
+      thisMonthCount,
       averageFarmSize: averageFarmSize.toFixed(2),
       bankDistribution,
     });
@@ -131,22 +190,34 @@ const AnalyticsScreen = ({ navigation }) => {
             color="#28a745"
           />
           <SummaryCard
-            title="Average Farm Size"
-            value={`${analytics.averageFarmSize} ha`}
-            icon="leaf-outline"
+            title="Today"
+            value={analytics.todayCount || 0}
+            icon="today-outline"
             color="#17a2b8"
           />
           <SummaryCard
-            title="States Covered"
-            value={Object.keys(analytics.stateDistribution).length}
-            icon="location-outline"
+            title="This Week"
+            value={analytics.thisWeekCount || 0}
+            icon="calendar-outline"
             color="#ffc107"
           />
           <SummaryCard
-            title="Crop Types"
-            value={Object.keys(analytics.cropDistribution).length}
-            icon="flower-outline"
+            title="This Month"
+            value={analytics.thisMonthCount || 0}
+            icon="trending-up-outline"
             color="#fd7e14"
+          />
+          <SummaryCard
+            title="Average Farm Size"
+            value={`${analytics.averageFarmSize} ha`}
+            icon="leaf-outline"
+            color="#6f42c1"
+          />
+          <SummaryCard
+            title="States Covered"
+            value={Object.keys(analytics.stateDistribution || {}).length}
+            icon="location-outline"
+            color="#e83e8c"
           />
         </View>
       </View>
@@ -182,6 +253,16 @@ const AnalyticsScreen = ({ navigation }) => {
       {/* Monthly Registrations */}
       <AnalyticsCard title="Monthly Registrations" icon="calendar-outline">
         <DistributionChart data={analytics.monthlyRegistrations} />
+      </AnalyticsCard>
+
+      {/* Weekly Registrations */}
+      <AnalyticsCard title="Weekly Registrations (Last 8 Weeks)" icon="stats-chart-outline">
+        <DistributionChart data={analytics.weeklyRegistrations || {}} />
+      </AnalyticsCard>
+
+      {/* Daily Registrations */}
+      <AnalyticsCard title="Daily Registrations (Last 7 Days)" icon="today-outline">
+        <DistributionChart data={analytics.dailyRegistrations || {}} />
       </AnalyticsCard>
 
       {/* Top Banks */}

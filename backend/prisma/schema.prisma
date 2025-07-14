@@ -54,6 +54,7 @@ model Farmer {
   
   // Bank Information (manual entry)
   bankName          String?
+  accountName       String?
   accountNumber     String?
   bvn               String?   @unique
   
@@ -100,7 +101,7 @@ model Farm {
   // Farm Geospatial Information
   farmCoordinates    Json?     // GeoJSON format for farm boundaries
   coordinateSystem   String?   @default("WGS84") // Coordinate system used (e.g., WGS84)
-  farmArea           Float?    // Area in square meters or hectares
+  farmArea           Float?    // Area in square meters or hectares (calculated from polygon)
   farmElevation      Float?    // Elevation in meters above sea level
 
   // Farm Yield Information

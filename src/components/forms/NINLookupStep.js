@@ -84,7 +84,7 @@ export default function NINLookupStep({
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Ionicons name="card-outline" size={48} color="#2563eb" />
+        <Ionicons name="card-outline" size={48} color="#013358" />
         <Text style={styles.title}>NIN Lookup</Text>
         <Text style={styles.description}>
           Enter the farmer's National Identification Number (NIN) to fetch and auto-fill personal information
@@ -131,7 +131,7 @@ export default function NINLookupStep({
                   </TouchableOpacity>
                 )}
                 {isLoading && (
-                  <ActivityIndicator size="small" color="#2563eb" style={styles.loadingIcon} />
+                  <ActivityIndicator size="small" color="#013358" style={styles.loadingIcon} />
                 )}
                 {validationSuccess && (
                   <View style={styles.successIcon}>
@@ -155,7 +155,7 @@ export default function NINLookupStep({
 
         {isLoading && (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#2563eb" />
+            <ActivityIndicator size="large" color="#013358" />
             <Text style={styles.loadingText}>Validating NIN...</Text>
           </View>
         )}
@@ -197,13 +197,13 @@ export default function NINLookupStep({
 
       <View style={styles.info}>
         <View style={styles.infoItem}>
-          <Ionicons name="information-circle-outline" size={20} color="#2563eb" />
+          <Ionicons name="information-circle-outline" size={20} color="#013358" />
           <Text style={styles.infoText}>
             NIN must be unique and will be used to identify the farmer
           </Text>
         </View>
         <View style={styles.infoItem}>
-          <Ionicons name="shield-checkmark-outline" size={20} color="#2563eb" />
+          <Ionicons name="shield-checkmark-outline" size={20} color="#013358" />
           <Text style={styles.infoText}>
             All data is securely encrypted and stored
           </Text>
@@ -277,7 +277,7 @@ const styles = StyleSheet.create({
     borderColor: '#ef4444',
   },
   lookupButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: '#013358',
     padding: 12,
     margin: 4,
     borderRadius: 8,
@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#2563eb',
+    backgroundColor: '#013358',
     paddingVertical: 16,
     paddingHorizontal: 24,
     borderRadius: 12,

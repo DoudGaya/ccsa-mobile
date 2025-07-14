@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
   searchButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2563eb',
+    backgroundColor: '#013358',
     paddingVertical: 14,
     paddingHorizontal: 20,
     borderRadius: 12,
@@ -317,7 +317,7 @@ const styles = StyleSheet.create({
   },
   quickSearchText: {
     fontSize: 12,
-    color: '#2563eb',
+    color: '#013358',
     fontWeight: '500',
   },
   resultsContainer: {
@@ -340,7 +340,7 @@ const styles = StyleSheet.create({
   },
   clearResultsText: {
     fontSize: 16,
-    color: '#2563eb',
+    color: '#013358',
     fontWeight: '500',
   },
   listContainer: {
@@ -370,7 +370,7 @@ const styles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    backgroundColor: '#2563eb',
+    backgroundColor: '#013358',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,

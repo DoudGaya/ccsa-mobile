@@ -64,7 +64,7 @@ export default function PollingUnitSelect({ selectedState, selectedLGA, selected
     >
       <Text style={styles.pollingUnitItemText}>{item.name}</Text>
       {selectedValue === item.value && (
-        <Ionicons name="checkmark" size={20} color="#2563eb" />
+        <Ionicons name="checkmark" size={20} color="#013358" />
       )}
     </TouchableOpacity>
   );

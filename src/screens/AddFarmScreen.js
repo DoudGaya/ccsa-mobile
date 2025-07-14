@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { farmService } from '../services/farmService';
+import { calculateFarmSizeFromPolygon } from '../utils/farmCalculations';
 import LoadingScreen from './LoadingScreen';
 import FarmInfoStep from '../components/forms/FarmInfoStep';
 
@@ -32,7 +33,7 @@ const farmSchema = z.object({
     ward: z.string().optional(),
     pollingUnit: z.string().optional(),
     primaryCrop: z.string().optional(),
-    secondaryCrop: z.string().optional(),
+    secondaryCrop: z.array(z.string()).optional(),
     farmingExperience: z.string().optional(),
     farmSeason: z.string().optional(),
     coordinates: z.object({
@@ -98,7 +99,7 @@ export default function AddFarmScreen({ navigation, route }) {
         ward: '',
         pollingUnit: '',
         primaryCrop: '',
-        secondaryCrop: '',
+        secondaryCrop: [],
         farmingExperience: '',
         farmSeason: '',
         coordinates: null,
@@ -119,6 +120,26 @@ export default function AddFarmScreen({ navigation, route }) {
       quantity: '',
     },
   });
+
+  // Watch for farmPolygon changes and auto-calculate farm size
+  const watchedPolygon = watch('farmPolygon');
+  
+  useEffect(() => {
+    if (watchedPolygon && Array.isArray(watchedPolygon) && watchedPolygon.length > 0) {
+      try {
+        // Calculate farm size from polygon coordinates
+        const calculatedSize = calculateFarmSizeFromPolygon(watchedPolygon);
+        
+        if (calculatedSize > 0) {
+          // Update the farmSize field with calculated value
+          setValue('farmInfo.farmSize', calculatedSize.toString());
+          console.log(`Farm size auto-calculated: ${calculatedSize} hectares`);
+        }
+      } catch (error) {
+        console.error('Error calculating farm size from polygon:', error);
+      }
+    }
+  }, [watchedPolygon, setValue]);
 
   const onSubmit = async (data) => {
     console.log('=== ADD FARM SUBMISSION START ===');
@@ -147,7 +168,9 @@ export default function AddFarmScreen({ navigation, route }) {
         farmWard: data.farmInfo?.ward || '',
         farmPollingUnit: data.farmInfo?.pollingUnit || '',
         primaryCrop: data.farmInfo?.primaryCrop || '',
-        secondaryCrop: data.farmInfo?.secondaryCrop || '',
+        secondaryCrop: Array.isArray(data.farmInfo?.secondaryCrop) 
+          ? data.farmInfo.secondaryCrop.join(', ') 
+          : (data.farmInfo?.secondaryCrop || ''),
         farmingExperience: data.farmInfo?.farmingExperience ? parseInt(data.farmInfo.farmingExperience) : null,
         farmSeason: data.farmInfo?.farmSeason || '',
         
@@ -349,7 +372,7 @@ const styles = StyleSheet.create({
     borderTopColor: '#e5e7eb',
   },
   submitButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: '#013358',
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',

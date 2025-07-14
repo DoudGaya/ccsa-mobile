@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -6,56 +6,13 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  ActivityIndicator,
   Image,
 } from 'react-native';
 import { useAuth } from '../store/AuthContext';
-import { analyticsService } from '../services/analyticsService';
 import { Ionicons } from '@expo/vector-icons';
 
 const ProfileScreen = ({ navigation }) => {
   const { user, signOut } = useAuth();
-  const [stats, setStats] = useState({
-    totalFarmers: 0,
-    thisMonth: 0,
-    thisWeek: 0,
-    today: 0,
-  });
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchStats();
-  }, []);
-
-  const fetchStats = async () => {
-    try {
-      console.log('📊 ProfileScreen: Fetching real agent statistics...');
-      const data = await analyticsService.getAgentStats();
-      setStats({
-        totalFarmers: data.totalFarmers || 0,
-        thisMonth: data.farmersThisMonth || 0,
-        thisWeek: data.farmersThisWeek || 0,
-        today: data.farmersToday || 0,
-      });
-      console.log('📊 ProfileScreen: Stats updated:', data);
-    } catch (error) {
-      console.error('❌ ProfileScreen: Error fetching stats:', error);
-      Alert.alert(
-        'Error', 
-        'Failed to load statistics. Please check your connection and try again.',
-        [{ text: 'OK' }]
-      );
-      // Fallback to zero stats
-      setStats({
-        totalFarmers: 0,
-        thisMonth: 0,
-        thisWeek: 0,
-        today: 0,
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleSignOut = () => {
     Alert.alert(
@@ -72,19 +29,15 @@ const ProfileScreen = ({ navigation }) => {
           onPress: async () => {
             try {
               await signOut();
-              navigation.replace('Welcome');
+              // No need to navigate - AppNavigator will handle it automatically
             } catch (error) {
+              console.error('❌ Sign out error:', error);
               Alert.alert('Error', 'Failed to sign out. Please try again.');
             }
           },
         },
       ]
     );
-  };
-
-  const handleRefreshStats = async () => {
-    setLoading(true);
-    await fetchStats();
   };
 
   const handleEditProfile = () => {
@@ -102,15 +55,6 @@ const ProfileScreen = ({ navigation }) => {
   const handleSupport = () => {
     Alert.alert('Support', 'For support, please contact: abdulrahman.dauda@cosmopolitan.edu.ng');
   };
-
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#28a745" />
-        <Text style={styles.loadingText}>Loading profile...</Text>
-      </View>
-    );
-  }
 
   return (
     <ScrollView style={styles.container}>
@@ -135,50 +79,6 @@ const ProfileScreen = ({ navigation }) => {
           <Ionicons name="create-outline" size={20} color="#007bff" />
           <Text style={styles.editButtonText}>Edit Profile</Text>
         </TouchableOpacity>
-      </View>
-
-      {/* Stats Cards */}
-      <View style={styles.statsSection}>
-        <View style={styles.statsSectionHeader}>
-          <Text style={styles.sectionTitle}>Registration Statistics</Text>
-          <TouchableOpacity 
-            style={styles.refreshButton} 
-            onPress={handleRefreshStats}
-            disabled={loading}
-          >
-            <Ionicons 
-              name="refresh" 
-              size={20} 
-              color={loading ? "#9ca3af" : "#2563eb"} 
-            />
-          </TouchableOpacity>
-        </View>
-        <View style={styles.statsGrid}>
-          <StatCard
-            title="Total Farmers"
-            value={stats.totalFarmers}
-            icon="people-outline"
-            color="#28a745"
-          />
-          <StatCard
-            title="This Month"
-            value={stats.thisMonth}
-            icon="calendar-outline"
-            color="#007bff"
-          />
-          <StatCard
-            title="This Week"
-            value={stats.thisWeek}
-            icon="time-outline"
-            color="#ffc107"
-          />
-          <StatCard
-            title="Today"
-            value={stats.today}
-            icon="today-outline"
-            color="#17a2b8"
-          />
-        </View>
       </View>
 
       {/* Menu Options */}
@@ -224,16 +124,6 @@ const ProfileScreen = ({ navigation }) => {
     </ScrollView>
   );
 };
-
-const StatCard = ({ title, value, icon, color }) => (
-  <View style={styles.statCard}>
-    <View style={[styles.statIcon, { backgroundColor: color }]}>
-      <Ionicons name={icon} size={24} color="#fff" />
-    </View>
-    <Text style={styles.statValue}>{value}</Text>
-    <Text style={styles.statTitle}>{title}</Text>
-  </View>
-);
 
 const MenuOption = ({ icon, title, subtitle, onPress }) => (
   <TouchableOpacity style={styles.menuOption} onPress={onPress}>
@@ -323,34 +213,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: 4,
   },
-  statsSection: {
-    padding: 20,
-  },
-  statsSectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
   },
-  refreshButton: {
-    padding: 8,
-    borderRadius: 20,
-    backgroundColor: '#f3f4f6',
-  },
-  statsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-  },
-  statCard: {
-    backgroundColor: '#fff',
-    width: '48%',
-    padding: 16,
+  menuSection: {
     borderRadius: 8,
     alignItems: 'center',
     marginBottom: 12,
@@ -359,25 +227,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-  },
-  statIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 4,
-  },
-  statTitle: {
-    fontSize: 12,
-    color: '#666',
-    textAlign: 'center',
   },
   menuSection: {
     backgroundColor: '#fff',

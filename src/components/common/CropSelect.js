@@ -40,7 +40,7 @@ export default function CropSelect({ selectedValue, onValueChange, placeholder, 
     >
       <Text style={styles.cropItemText}>{item}</Text>
       {selectedValue === item && (
-        <Ionicons name="checkmark" size={20} color="#2563eb" />
+        <Ionicons name="checkmark" size={20} color="#013358" />
       )}
     </TouchableOpacity>
   );

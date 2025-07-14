@@ -91,7 +91,7 @@ const CustomSelect = ({
                     {item.label}
                   </Text>
                   {item.value === selectedValue && (
-                    <Ionicons name="checkmark" size={20} color="#2563eb" />
+                    <Ionicons name="checkmark" size={20} color="#013358" />
                   )}
                 </TouchableOpacity>
               )}
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   selectedOptionText: {
-    color: '#2563eb',
+    color: '#013358',
     fontWeight: '500',
   },
   pickerContainer: {

@@ -12,6 +12,7 @@ import { Controller } from 'react-hook-form';
 import { Picker } from '@react-native-picker/picker';
 import * as Location from 'expo-location';
 import CropSelect from '../common/CropSelect';
+import MultiCropSelect from '../common/MultiCropSelect';
 import CustomSelect from '../common/CustomSelect';
 import SearchableSelect from '../common/SearchableSelect';
 import StateSelect from '../common/StateSelect';
@@ -242,27 +243,6 @@ export default function FarmInfoStep({ control, errors, setValue, watch, showTit
           />
         </View>
 
-        {/* Farm Size */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Farm Size</Text>
-          <Controller
-            control={control}
-            name="farmInfo.farmSize"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <View style={styles.inputContainer}>
-                <Ionicons name="resize-outline" size={20} color="#9ca3af" style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  placeholder="e.g., 2 hectares, 5 acres"
-                  value={value}
-                  onChangeText={onChange}
-                  onBlur={onBlur}
-                />
-              </View>
-            )}
-          />
-        </View>
-
         {/* Farm Category */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Farm Category</Text>
@@ -299,7 +279,7 @@ export default function FarmInfoStep({ control, errors, setValue, watch, showTit
                   <Ionicons
                     name={value === 'lowland' ? 'radio-button-on' : 'radio-button-off'}
                     size={20}
-                    color={value === 'lowland' ? '#2563eb' : '#9ca3af'}
+                    color={value === 'lowland' ? '#013358' : '#9ca3af'}
                   />
                   <Text style={styles.radioText}>Lowland</Text>
                 </TouchableOpacity>
@@ -310,7 +290,7 @@ export default function FarmInfoStep({ control, errors, setValue, watch, showTit
                   <Ionicons
                     name={value === 'highland' ? 'radio-button-on' : 'radio-button-off'}
                     size={20}
-                    color={value === 'highland' ? '#2563eb' : '#9ca3af'}
+                    color={value === 'highland' ? '#013358' : '#9ca3af'}
                   />
                   <Text style={styles.radioText}>Highland</Text>
                 </TouchableOpacity>
@@ -360,24 +340,28 @@ export default function FarmInfoStep({ control, errors, setValue, watch, showTit
           )}
         </View>
 
-        {/* Secondary Crop */}
+        {/* Secondary Crops */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Secondary Crop</Text>
+          <Text style={styles.label}>Secondary Crops</Text>
           <Controller
             control={control}
             name="farmInfo.secondaryCrop"
             render={({ field: { onChange, value } }) => (
-              <CropSelect
-                selectedValue={value}
-                onValueChange={onChange}
-                placeholder="Select secondary crop (optional)"
+              <MultiCropSelect
+                selectedValues={Array.isArray(value) ? value : (value ? [value] : [])}
+                onValuesChange={onChange}
+                placeholder="Select secondary crops (optional)"
                 error={!!errors.farmInfo?.secondaryCrop}
+                maxSelections={5}
               />
             )}
           />
           {errors.farmInfo?.secondaryCrop && (
             <Text style={styles.errorText}>{errors.farmInfo.secondaryCrop.message}</Text>
           )}
+          <Text style={styles.helperText}>
+            You can select up to 5 secondary crops that are also grown on this farm
+          </Text>
         </View>
 
         {/* Farm Season */}
@@ -561,7 +545,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#2563eb',
+    backgroundColor: '#013358',
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 12,
@@ -592,11 +576,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#2563eb',
+    borderColor: '#013358',
     borderStyle: 'dashed',
   },
   polygonButtonText: {
-    color: '#2563eb',
+    color: '#013358',
     fontSize: 16,
     fontWeight: '600',
     marginLeft: 8,

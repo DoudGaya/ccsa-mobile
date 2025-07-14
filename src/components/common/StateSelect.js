@@ -58,7 +58,7 @@ export default function StateSelect({ selectedValue, onValueChange, placeholder,
     >
       <Text style={styles.stateItemText}>{item.name}</Text>
       {selectedValue === item.value && (
-        <Ionicons name="checkmark" size={20} color="#2563eb" />
+        <Ionicons name="checkmark" size={20} color="#013358" />
       )}
     </TouchableOpacity>
   );

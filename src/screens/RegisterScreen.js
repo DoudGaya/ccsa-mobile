@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   registerButton: {
-    backgroundColor: '#2563eb',
+    backgroundColor: '#013358',
     paddingVertical: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -395,7 +395,7 @@ const styles = StyleSheet.create({
   },
   loginLink: {
     fontSize: 16,
-    color: '#2563eb',
+    color: '#013358',
     fontWeight: '600',
   },
 });

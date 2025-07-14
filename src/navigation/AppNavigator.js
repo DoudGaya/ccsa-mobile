@@ -45,7 +45,7 @@ function MainTabNavigator() {
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#2563eb',
+        tabBarActiveTintColor: '#013358',
         tabBarInactiveTintColor: 'gray',
         headerShown: false,
       })}
@@ -79,10 +79,10 @@ function DrawerNavigator() {
   return (
     <Drawer.Navigator
       screenOptions={{
-        drawerActiveTintColor: '#2563eb',
+        drawerActiveTintColor: '#013358',
         drawerInactiveTintColor: 'gray',
         headerStyle: {
-          backgroundColor: '#2563eb',
+          backgroundColor: '#013358',
         },
         headerTintColor: '#fff',
       }}
@@ -145,7 +145,18 @@ export default function AppNavigator() {
             name="ChangePassword" 
             component={ChangePasswordScreen}
             options={{ 
-              headerShown: false
+              headerShown: true,
+              title: 'Change Password',
+              headerBackTitle: 'Back'
+            }}
+          />
+          <Stack.Screen 
+            name="Certificate" 
+            component={CertificateScreen}
+            options={{ 
+              headerShown: true,
+              title: 'Certificate',
+              headerBackTitle: 'Back'
             }}
           />
         </>

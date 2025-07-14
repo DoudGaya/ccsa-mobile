@@ -15,17 +15,22 @@ import StateSelect from '../common/StateSelect';
 import LGASelect from '../common/LGASelect';
 import WardSelect from '../common/WardSelect';
 import PollingUnitSelect from '../common/PollingUnitSelect';
+import PhoneVerificationModal from '../common/PhoneVerificationModal';
 import * as Location from 'expo-location';
 import optimizedLocationService from '../../services/optimizedLocationService';
 
 export default function ContactInfoStep({ control, errors, setValue, watch }) {
   const [loadingLocation, setLoadingLocation] = useState(false);
+  const [showPhoneVerification, setShowPhoneVerification] = useState(false);
+  const [phoneToVerify, setPhoneToVerify] = useState('');
+  const [phoneVerified, setPhoneVerified] = useState(false);
   const coordinates = watch('contactInfo.coordinates');
   
   // Watch form values for cascading dropdowns
   const selectedState = watch('contactInfo.state');
   const selectedLocalGovernment = watch('contactInfo.localGovernment');
   const selectedWard = watch('contactInfo.ward');
+  const currentPhoneNumber = watch('contactInfo.phoneNumber');
   
   // State for dropdown options and loading states
   // Note: Individual select components now handle their own loading
@@ -51,6 +56,22 @@ export default function ContactInfoStep({ control, errors, setValue, watch }) {
       setValue('contactInfo.pollingUnit', '');
     }
   }, [selectedWard, setValue]);
+
+  // Handle phone verification
+  const handlePhoneVerification = (phoneNumber) => {
+    if (phoneNumber && phoneNumber.length === 11) {
+      setPhoneToVerify(phoneNumber);
+      setShowPhoneVerification(true);
+    }
+  };
+
+  const handleVerificationComplete = (verified) => {
+    setPhoneVerified(verified);
+    setShowPhoneVerification(false);
+    if (verified) {
+      Alert.alert('Success', 'Phone number verified successfully!');
+    }
+  };
 
   const getCurrentLocation = async () => {
     try {
@@ -89,7 +110,7 @@ export default function ContactInfoStep({ control, errors, setValue, watch }) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Ionicons name="location-outline" size={48} color="#2563eb" />
+        <Ionicons name="location-outline" size={48} color="#013358" />
         <Text style={styles.title}>Contact Information</Text>
         <Text style={styles.description}>
           Enter the farmer's address and location details
@@ -100,26 +121,54 @@ export default function ContactInfoStep({ control, errors, setValue, watch }) {
         {/* Phone Number */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Phone Number *</Text>
-          <Controller
-            control={control}
-            name="contactInfo.phoneNumber"
-            render={({ field: { onChange, onBlur, value } }) => (
-              <View style={styles.inputContainer}>
-                <Ionicons name="call-outline" size={20} color="#9ca3af" style={styles.inputIcon} />
-                <TextInput
-                  style={[styles.input, errors.contactInfo?.phoneNumber && styles.inputError]}
-                  placeholder="e.g., 08012345678"
-                  value={value}
-                  onChangeText={onChange}
-                  onBlur={onBlur}
-                  keyboardType="phone-pad"
-                  maxLength={11}
-                />
-              </View>
+          <View style={styles.phoneVerificationContainer}>
+            <Controller
+              control={control}
+              name="contactInfo.phoneNumber"
+              render={({ field: { onChange, onBlur, value } }) => (
+                <View style={[styles.inputContainer, styles.phoneInputContainer]}>
+                  <Ionicons name="call-outline" size={20} color="#9ca3af" style={styles.inputIcon} />
+                  <TextInput
+                    style={[styles.input, errors.contactInfo?.phoneNumber && styles.inputError]}
+                    placeholder="e.g., 08012345678"
+                    value={value}
+                    onChangeText={(text) => {
+                      onChange(text);
+                      if (text !== currentPhoneNumber) {
+                        setPhoneVerified(false); // Reset verification if phone changes
+                      }
+                    }}
+                    onBlur={onBlur}
+                    keyboardType="phone-pad"
+                    maxLength={11}
+                  />
+                  {phoneVerified && (
+                    <Ionicons name="checkmark-circle" size={20} color="#10b981" style={styles.verifiedIcon} />
+                  )}
+                </View>
+              )}
+            />
+            {currentPhoneNumber && currentPhoneNumber.length === 11 && !phoneVerified && (
+              <TouchableOpacity
+                style={styles.verifyButton}
+                onPress={() => handlePhoneVerification(currentPhoneNumber)}
+              >
+                <Text style={styles.verifyButtonText}>Verify</Text>
+              </TouchableOpacity>
             )}
-          />
+          </View>
           {errors.contactInfo?.phoneNumber && (
             <Text style={styles.errorText}>{errors.contactInfo.phoneNumber.message}</Text>
+          )}
+          {currentPhoneNumber && currentPhoneNumber.length === 11 && !phoneVerified && (
+            <Text style={styles.helperText}>
+              Please verify this phone number to continue
+            </Text>
+          )}
+          {phoneVerified && (
+            <Text style={styles.successText}>
+              ✓ Phone number verified
+            </Text>
           )}
         </View>
 
@@ -324,12 +373,20 @@ export default function ContactInfoStep({ control, errors, setValue, watch }) {
 
       <View style={styles.info}>
         <View style={styles.infoItem}>
-          <Ionicons name="information-circle-outline" size={20} color="#2563eb" />
+          <Ionicons name="information-circle-outline" size={20} color="#013358" />
           <Text style={styles.infoText}>
             Accurate location information helps with farmer identification and outreach
           </Text>
         </View>
       </View>
+
+      {/* Phone Verification Modal */}
+      <PhoneVerificationModal
+        visible={showPhoneVerification}
+        phoneNumber={phoneToVerify}
+        onVerificationComplete={handleVerificationComplete}
+        onCancel={() => setShowPhoneVerification(false)}
+      />
     </View>
   );
 }
@@ -414,7 +471,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#2563eb',
+    backgroundColor: '#013358',
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
@@ -441,5 +498,36 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#6b7280',
     fontStyle: 'italic',
+  },
+  phoneVerificationContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  phoneInputContainer: {
+    flex: 1,
+  },
+  verifiedIcon: {
+    marginRight: 8,
+  },
+  verifyButton: {
+    backgroundColor: '#013358',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 0,
+  },
+  verifyButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  successText: {
+    fontSize: 14,
+    color: '#10b981',
+    marginTop: 4,
+    fontWeight: '500',
   },
 });

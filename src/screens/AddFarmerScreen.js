@@ -17,7 +17,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { farmerSchema, ninSchema } from '../utils/validation';
 import { useFarmerStore } from '../store/farmerStore';
 import { farmerService } from '../services/farmerService';
-import { ninService, testNetworkConnectivity } from '../services/ninService';
+import { ninService } from '../services/ninService';
 import LoadingScreen from './LoadingScreen';
 import { useAuth } from '../store/AuthContext';
 import { auth } from '../services/firebase';
@@ -394,8 +394,11 @@ export default function AddFarmerScreen({ navigation }) {
       // Test network connectivity first (without auth)
       console.log('Testing network connectivity...');
       try {
-        const testResult = await testNetworkConnectivity(nin);
-        console.log('Network test successful:', testResult);
+        const testResult = await ninService.testConnection();
+        console.log('Network test result:', testResult);
+        if (!testResult.success) {
+          console.warn('Network test failed:', testResult.message);
+        }
       } catch (networkError) {
         console.error('Network test failed:', networkError);
         // Still continue with the main lookup in case the test endpoint doesn't work
@@ -587,7 +590,7 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#2563eb',
+    backgroundColor: '#013358',
     borderRadius: 3,
   },
   content: {
@@ -624,7 +627,7 @@ const styles = StyleSheet.create({
   nextButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#2563eb',
+    backgroundColor: '#013358',
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,

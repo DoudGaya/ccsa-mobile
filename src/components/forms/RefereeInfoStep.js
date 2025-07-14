@@ -23,7 +23,7 @@ const RELATION_OPTIONS = [
   'Other',
 ];
 
-export default function RefereeInfoStep({ control, errors, watch }) {
+export default function RefereeInfoStep({ control, errors, watch, setValue }) {
   const { fields, append, remove } = useFieldArray({
     control,
     name: 'referees',
@@ -44,7 +44,7 @@ export default function RefereeInfoStep({ control, errors, watch }) {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Ionicons name="people-outline" size={48} color="#2563eb" />
+        <Ionicons name="people-outline" size={48} color="#013358" />
         <Text style={styles.title}>Referee Information</Text>
         <Text style={styles.description}>
           Add 1-3 referees who can vouch for the farmer's identity
@@ -168,7 +168,7 @@ export default function RefereeInfoStep({ control, errors, watch }) {
                     onPress={() => {
                       const currentValue = watch(`referees.${index}.relation`);
                       if (currentValue !== relation) {
-                        control._updateFields(`referees.${index}.relation`, relation);
+                        setValue(`referees.${index}.relation`, relation);
                       }
                     }}
                   >
@@ -183,7 +183,7 @@ export default function RefereeInfoStep({ control, errors, watch }) {
         {/* Add Referee Button */}
         {fields.length < 3 && (
           <TouchableOpacity style={styles.addButton} onPress={addReferee}>
-            <Ionicons name="add-circle-outline" size={24} color="#2563eb" />
+            <Ionicons name="add-circle-outline" size={24} color="#013358" />
             <Text style={styles.addButtonText}>Add Another Referee</Text>
           </TouchableOpacity>
         )}
@@ -191,7 +191,7 @@ export default function RefereeInfoStep({ control, errors, watch }) {
 
       <View style={styles.info}>
         <View style={styles.infoItem}>
-          <Ionicons name="information-circle-outline" size={20} color="#2563eb" />
+          <Ionicons name="information-circle-outline" size={20} color="#013358" />
           <Text style={styles.infoText}>
             Referees help verify the farmer's identity and build trust in the community
           </Text>
@@ -324,12 +324,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     borderRadius: 12,
     borderWidth: 2,
-    borderColor: '#2563eb',
+    borderColor: '#013358',
     borderStyle: 'dashed',
   },
   addButtonText: {
     fontSize: 16,
-    color: '#2563eb',
+    color: '#013358',
     fontWeight: '600',
     marginLeft: 8,
   },
