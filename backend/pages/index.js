@@ -1,54 +1,42 @@
+import { useEffect } from 'react'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/router'
+import Head from 'next/head'
+
 export default function Home() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
+
+  useEffect(() => {
+    if (status === 'loading') return // Still loading
+
+    if (session) {
+      router.replace('/dashboard')
+    } else {
+      router.replace('/auth/signin')
+    }
+  }, [session, status, router])
+
+  // Show loading while redirecting
   return (
-    <div style={{ padding: '20px', fontFamily: 'Arial, sans-serif' }}>
-      <h1>CCSA Mobile Backend API</h1>
-      <p>The backend API for the Farmers Information Management System (FIMS) is running.</p>
+    <>
+      <Head>
+        <title>CCSA Admin Dashboard</title>
+        <meta name="description" content="CCSA Farmers Information Management System Admin Dashboard" />
+        <link rel="icon" href="/favicon.ico" />
+      </Head>
       
-      <h2>Available Endpoints:</h2>
-      <ul>
-        <li><strong>Authentication:</strong>
-          <ul>
-            <li>POST /api/auth/login - Agent login</li>
-            <li>POST /api/auth/register - Agent registration</li>
-          </ul>
-        </li>
-        <li><strong>Farmers:</strong>
-          <ul>
-            <li>GET /api/farmers - List farmers</li>
-            <li>POST /api/farmers - Create farmer</li>
-            <li>GET /api/farmers/:id - Get farmer details</li>
-            <li>PUT /api/farmers/:id - Update farmer</li>
-            <li>DELETE /api/farmers/:id - Delete farmer</li>
-            <li>GET /api/farmers/search - Search farmers</li>
-            <li>GET /api/farmers/validate - Validate unique fields</li>
-          </ul>
-        </li>
-        <li><strong>Certificates:</strong>
-          <ul>
-            <li>GET /api/certificates - List certificates</li>
-            <li>POST /api/certificates - Generate certificate</li>
-          </ul>
-        </li>
-        <li><strong>Analytics:</strong>
-          <ul>
-            <li>GET /api/analytics - Get analytics data</li>
-          </ul>
-        </li>
-        <li><strong>External Services:</strong>
-          <ul>
-            <li>GET /api/nin/lookup - NIN lookup service</li>
-          </ul>
-        </li>
-      </ul>
-      
-      <h2>Setup Instructions:</h2>
-      <ol>
-        <li>Copy .env.example to .env and configure your environment variables</li>
-        <li>Set up your PostgreSQL database (NeonDB recommended)</li>
-        <li>Run: npx prisma generate</li>
-        <li>Run: npx prisma db push</li>
-        <li>Start the development server: npm run dev</li>
-      </ol>
-    </div>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-full bg-ccsa-blue mb-4">
+            <span className="text-white font-bold text-2xl">🇳🇬</span>
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">CCSA Admin Dashboard</h1>
+          <p className="text-gray-600 mb-4">Farmers Information Management System</p>
+          <div className="spinner mx-auto"></div>
+          <p className="text-sm text-gray-500 mt-4">Redirecting...</p>
+        </div>
+      </div>
+    </>
   )
 }

@@ -1,5 +1,6 @@
 import { authMiddleware } from '../../../lib/authMiddleware';
 import { prisma } from '../../../lib/prisma';
+import { getSession } from 'next-auth/react';
 
 async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -7,19 +8,38 @@ async function handler(req, res) {
   }
 
   try {
-    const agentId = req.user.uid;
+    // Check if this is a web admin request (NextAuth session) or mobile agent request (Firebase token)
+    const session = await getSession({ req });
+    
+    if (session) {
+      // Web admin user - has access to all analytics
+      req.isAdmin = true;
+      req.user = { 
+        uid: session.user.id, 
+        email: session.user.email,
+        role: session.user.role 
+      };
+    } else {
+      // Mobile agent request - apply Firebase authentication middleware
+      await authMiddleware(req, res);
+      req.isAdmin = false;
+    }
 
-    // Get total farmers count for this agent
+    let whereClause = {};
+    if (!req.isAdmin) {
+      // If not admin, filter by agent
+      whereClause = { agentId: req.user.uid };
+    }
+
+    // Get total farmers count
     const totalFarmers = await prisma.farmer.count({
-      where: { agentId }
+      where: whereClause
     });
 
-    // Get total farms count for this agent's farmers
+    // Get total farms count
     const totalFarms = await prisma.farm.count({
-      where: {
-        farmer: {
-          agentId
-        }
+      where: req.isAdmin ? {} : {
+        farmer: whereClause
       }
     });
 
@@ -30,7 +50,7 @@ async function handler(req, res) {
 
     const farmersThisMonth = await prisma.farmer.count({
       where: {
-        agentId,
+        ...whereClause,
         createdAt: {
           gte: startOfMonth
         }
@@ -46,7 +66,7 @@ async function handler(req, res) {
 
     const farmersThisWeek = await prisma.farmer.count({
       where: {
-        agentId,
+        ...whereClause,
         createdAt: {
           gte: startOfWeek
         }
@@ -59,38 +79,40 @@ async function handler(req, res) {
 
     const farmersToday = await prisma.farmer.count({
       where: {
-        agentId,
+        ...whereClause,
         createdAt: {
           gte: startOfDay
         }
       }
     });
 
-    // Get top crops for this agent's farmers
+    // Get top crops
     const topCrops = await prisma.farm.groupBy({
-      by: ['cropType'],
-      where: {
-        farmer: {
-          agentId
-        },
-        cropType: {
+      by: ['primaryCrop'],
+      where: req.isAdmin ? {
+        primaryCrop: {
+          not: null
+        }
+      } : {
+        farmer: whereClause,
+        primaryCrop: {
           not: null
         }
       },
       _count: {
-        cropType: true
+        primaryCrop: true
       },
       orderBy: {
         _count: {
-          cropType: 'desc'
+          primaryCrop: 'desc'
         }
       },
       take: 5
     });
 
     const formattedTopCrops = topCrops.map(crop => ({
-      crop: crop.cropType,
-      count: crop._count.cropType
+      crop: crop.primaryCrop,
+      count: crop._count.primaryCrop
     }));
 
     const stats = {
@@ -109,4 +131,28 @@ async function handler(req, res) {
   }
 }
 
-export default authMiddleware(handler);
+export default async function apiHandler(req, res) {
+  try {
+    // Check if this is a web admin request (NextAuth session) or mobile agent request (Firebase token)
+    const session = await getSession({ req });
+    
+    if (session) {
+      // Web admin user - has access to all analytics
+      req.isAdmin = true;
+      req.user = { 
+        uid: session.user.id, 
+        email: session.user.email,
+        role: session.user.role 
+      };
+    } else {
+      // Mobile agent request - apply Firebase authentication middleware
+      await authMiddleware(req, res);
+      req.isAdmin = false;
+    }
+
+    return await handler(req, res);
+  } catch (error) {
+    console.error('Analytics API error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+}
