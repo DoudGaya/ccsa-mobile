@@ -54,6 +54,79 @@ const CROPS = [
   'Sorghum', 'Millet', 'Cowpea', 'Soybean', 'Sweet Potato', 'Irish Potato',
 ];
 
+// Category-specific options
+const LIVESTOCK_TYPES = [
+  'Cattle', 'Goats', 'Sheep', 'Pigs', 'Rabbits', 'Donkeys', 'Horses', 'Camels'
+];
+
+const POULTRY_TYPES = [
+  'Chickens (Broilers)', 'Chickens (Layers)', 'Turkeys', 'Ducks', 'Geese', 'Guinea Fowl', 'Quails'
+];
+
+const FISH_TYPES = [
+  'Catfish', 'Tilapia', 'Carp', 'Mackerel', 'Salmon', 'Prawns', 'Crayfish', 'Snails'
+];
+
+const HORTICULTURE_TYPES = [
+  'Vegetables', 'Fruits', 'Flowers', 'Ornamental Plants', 'Herbs', 'Spices'
+];
+
+// Helper function to get category-specific options
+const getCategoryOptions = (category) => {
+  switch (category) {
+    case 'LIVESTOCK':
+      return LIVESTOCK_TYPES;
+    case 'POULTRY':
+      return POULTRY_TYPES;
+    case 'AQUACULTURE':
+      return FISH_TYPES;
+    case 'HORTICULTURE':
+      return HORTICULTURE_TYPES;
+    case 'ARABLE':
+    case 'MIXED':
+    default:
+      return CROPS;
+  }
+};
+
+// Helper function to get category-specific labels
+const getCategoryLabels = (category) => {
+  switch (category) {
+    case 'LIVESTOCK':
+      return {
+        primary: 'Primary Livestock',
+        secondary: 'Secondary Livestock',
+        helper: 'You can select up to 5 additional livestock types raised on this farm'
+      };
+    case 'POULTRY':
+      return {
+        primary: 'Primary Poultry',
+        secondary: 'Secondary Poultry',
+        helper: 'You can select up to 5 additional poultry types raised on this farm'
+      };
+    case 'AQUACULTURE':
+      return {
+        primary: 'Primary Fish/Aquatic Species',
+        secondary: 'Secondary Fish/Aquatic Species',
+        helper: 'You can select up to 5 additional aquatic species farmed'
+      };
+    case 'HORTICULTURE':
+      return {
+        primary: 'Primary Horticultural Product',
+        secondary: 'Secondary Horticultural Products',
+        helper: 'You can select up to 5 additional horticultural products grown'
+      };
+    case 'ARABLE':
+    case 'MIXED':
+    default:
+      return {
+        primary: 'Primary Crop',
+        secondary: 'Secondary Crops',
+        helper: 'You can select up to 5 secondary crops that are also grown on this farm'
+      };
+  }
+};
+
 export default function FarmInfoStep({ control, errors, setValue, watch, showTitle = true }) {
   const [loadingLocation, setLoadingLocation] = useState(false);
   const [coordinates, setCoordinates] = useState(watch('farmInfo.coordinates'));
@@ -62,6 +135,7 @@ export default function FarmInfoStep({ control, errors, setValue, watch, showTit
   const selectedState = watch('farmInfo.state');
   const selectedLocalGovernment = watch('farmInfo.localGovernment');
   const selectedWard = watch('farmInfo.ward');
+  const selectedFarmCategory = watch('farmInfo.farmCategory');
   
   // State for dropdown options and loading states
   // Note: Individual select components now handle their own loading
@@ -87,6 +161,14 @@ export default function FarmInfoStep({ control, errors, setValue, watch, showTit
       setValue('farmInfo.pollingUnit', '');
     }
   }, [selectedWard, setValue]);
+
+  // Reset crop/livestock fields when farm category changes
+  useEffect(() => {
+    if (selectedFarmCategory) {
+      setValue('farmInfo.primaryCrop', '');
+      setValue('farmInfo.secondaryCrop', []);
+    }
+  }, [selectedFarmCategory, setValue]);
 
   const getCurrentLocation = async () => {
     try {
@@ -119,6 +201,115 @@ export default function FarmInfoStep({ control, errors, setValue, watch, showTit
       setLoadingLocation(false);
     }
   };
+
+  // Custom component for category-specific selection
+  const CategorySpecificSelect = ({ category, selectedValue, onValueChange, placeholder, error }) => {
+    const options = getCategoryOptions(category);
+    
+    if (!category || ['ARABLE', 'MIXED'].includes(category)) {
+      return (
+        <CropSelect
+          selectedValue={selectedValue}
+          onValueChange={onValueChange}
+          placeholder={placeholder}
+          error={error}
+        />
+      );
+    }
+
+    return (
+      <CustomSelect
+        options={[
+          { label: placeholder, value: '' },
+          ...options.map(option => ({ label: option, value: option }))
+        ]}
+        selectedValue={selectedValue}
+        onValueChange={onValueChange}
+        placeholder={placeholder}
+        error={error}
+      />
+    );
+  };
+
+  // Custom component for category-specific multi-selection
+  const CategorySpecificMultiSelect = ({ category, selectedValues, onValuesChange, placeholder, error, maxSelections = 5 }) => {
+    const options = getCategoryOptions(category);
+    
+    if (!category || ['ARABLE', 'MIXED'].includes(category)) {
+      return (
+        <MultiCropSelect
+          selectedValues={Array.isArray(selectedValues) ? selectedValues : (selectedValues ? [selectedValues] : [])}
+          onValuesChange={onValuesChange}
+          placeholder={placeholder}
+          error={error}
+          maxSelections={maxSelections}
+        />
+      );
+    }
+
+    return (
+      <View style={styles.multiSelectContainer}>
+        <View style={styles.multiSelectHeader}>
+          <Text style={styles.multiSelectLabel}>{placeholder}</Text>
+          <Text style={styles.selectedCount}>
+            {Array.isArray(selectedValues) ? selectedValues.length : 0}/{maxSelections}
+          </Text>
+        </View>
+        
+        <View style={styles.optionsGrid}>
+          {options.map((option, index) => {
+            const isSelected = Array.isArray(selectedValues) && selectedValues.includes(option);
+            const canSelect = !isSelected && (!Array.isArray(selectedValues) || selectedValues.length < maxSelections);
+            
+            return (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.optionChip,
+                  isSelected && styles.optionChipSelected,
+                  (!canSelect && !isSelected) && styles.optionChipDisabled
+                ]}
+                onPress={() => {
+                  if (isSelected) {
+                    // Remove from selection
+                    const newValues = Array.isArray(selectedValues) 
+                      ? selectedValues.filter(v => v !== option)
+                      : [];
+                    onValuesChange(newValues);
+                  } else if (canSelect) {
+                    // Add to selection
+                    const newValues = Array.isArray(selectedValues) 
+                      ? [...selectedValues, option]
+                      : [option];
+                    onValuesChange(newValues);
+                  }
+                }}
+                disabled={!canSelect && !isSelected}
+              >
+                <Text style={[
+                  styles.optionChipText,
+                  isSelected && styles.optionChipTextSelected,
+                  (!canSelect && !isSelected) && styles.optionChipTextDisabled
+                ]}>
+                  {option}
+                </Text>
+                {isSelected && (
+                  <Ionicons name="checkmark-circle" size={16} color="#ffffff" style={styles.checkIcon} />
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+        
+        {error && (
+          <Text style={styles.errorText}>Please select at least one option</Text>
+        )}
+      </View>
+    );
+  };
+
+  // Get current category labels
+  const categoryLabels = getCategoryLabels(selectedFarmCategory);
 
   return (
     <View style={styles.container}>
@@ -195,7 +386,6 @@ export default function FarmInfoStep({ control, errors, setValue, watch, showTit
             <Text style={styles.errorText}>{errors.farmInfo.ward.message}</Text>
           )}
         </View>
-
         {/* Polling Unit */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Polling Unit *</Text>
@@ -320,49 +510,55 @@ export default function FarmInfoStep({ control, errors, setValue, watch, showTit
           )}
         </View>
 
-        {/* Primary Crop */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Primary Crop</Text>
-          <Controller
-            control={control}
-            name="farmInfo.primaryCrop"
-            render={({ field: { onChange, value } }) => (
-              <CropSelect
-                selectedValue={value}
-                onValueChange={onChange}
-                placeholder="Select primary crop"
-                error={!!errors.farmInfo?.primaryCrop}
-              />
+        {/* Primary Crop/Livestock/Poultry/Fish */}
+        {selectedFarmCategory && (
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>{categoryLabels.primary}</Text>
+            <Controller
+              control={control}
+              name="farmInfo.primaryCrop"
+              render={({ field: { onChange, value } }) => (
+                <CategorySpecificSelect
+                  category={selectedFarmCategory}
+                  selectedValue={value}
+                  onValueChange={onChange}
+                  placeholder={`Select primary ${selectedFarmCategory.toLowerCase()}`}
+                  error={!!errors.farmInfo?.primaryCrop}
+                />
+              )}
+            />
+            {errors.farmInfo?.primaryCrop && (
+              <Text style={styles.errorText}>{errors.farmInfo.primaryCrop.message}</Text>
             )}
-          />
-          {errors.farmInfo?.primaryCrop && (
-            <Text style={styles.errorText}>{errors.farmInfo.primaryCrop.message}</Text>
-          )}
-        </View>
+          </View>
+        )}
 
-        {/* Secondary Crops */}
-        <View style={styles.inputGroup}>
-          <Text style={styles.label}>Secondary Crops</Text>
-          <Controller
-            control={control}
-            name="farmInfo.secondaryCrop"
-            render={({ field: { onChange, value } }) => (
-              <MultiCropSelect
-                selectedValues={Array.isArray(value) ? value : (value ? [value] : [])}
-                onValuesChange={onChange}
-                placeholder="Select secondary crops (optional)"
-                error={!!errors.farmInfo?.secondaryCrop}
-                maxSelections={5}
-              />
+        {/* Secondary Crops/Livestock/Poultry/Fish */}
+        {selectedFarmCategory && (
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>{categoryLabels.secondary}</Text>
+            <Controller
+              control={control}
+              name="farmInfo.secondaryCrop"
+              render={({ field: { onChange, value } }) => (
+                <CategorySpecificMultiSelect
+                  category={selectedFarmCategory}
+                  selectedValues={Array.isArray(value) ? value : (value ? [value] : [])}
+                  onValuesChange={onChange}
+                  placeholder={`Select secondary ${selectedFarmCategory.toLowerCase()} (optional)`}
+                  error={!!errors.farmInfo?.secondaryCrop}
+                  maxSelections={5}
+                />
+              )}
+            />
+            {errors.farmInfo?.secondaryCrop && (
+              <Text style={styles.errorText}>{errors.farmInfo.secondaryCrop.message}</Text>
             )}
-          />
-          {errors.farmInfo?.secondaryCrop && (
-            <Text style={styles.errorText}>{errors.farmInfo.secondaryCrop.message}</Text>
-          )}
-          <Text style={styles.helperText}>
-            You can select up to 5 secondary crops that are also grown on this farm
-          </Text>
-        </View>
+            <Text style={styles.helperText}>
+              {categoryLabels.helper}
+            </Text>
+          </View>
+        )}
 
         {/* Farm Season */}
         <View style={styles.inputGroup}>
@@ -613,5 +809,68 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     flex: 1,
     lineHeight: 20,
+  },
+  // Multi-select styles
+  multiSelectContainer: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 12,
+    backgroundColor: '#f9fafb',
+    padding: 16,
+  },
+  multiSelectHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  multiSelectLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  selectedCount: {
+    fontSize: 14,
+    color: '#6b7280',
+    fontWeight: '500',
+  },
+  optionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  optionChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 4,
+  },
+  optionChipSelected: {
+    backgroundColor: '#013358',
+    borderColor: '#013358',
+  },
+  optionChipDisabled: {
+    backgroundColor: '#f3f4f6',
+    borderColor: '#e5e7eb',
+    opacity: 0.6,
+  },
+  optionChipText: {
+    fontSize: 14,
+    color: '#374151',
+    fontWeight: '500',
+  },
+  optionChipTextSelected: {
+    color: '#ffffff',
+  },
+  optionChipTextDisabled: {
+    color: '#9ca3af',
+  },
+  checkIcon: {
+    marginLeft: 6,
   },
 });

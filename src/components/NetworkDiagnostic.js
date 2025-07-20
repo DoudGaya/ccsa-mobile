@@ -101,13 +101,19 @@ const NetworkDiagnostic = () => {
       });
     }
 
-    // Test 3: NIN Service connectivity test
+    // Test 3: Basic API connectivity test
     await runDiagnostic('nin_service', async () => {
-      const result = await ninService.testConnection();
-      if (result.success) {
-        return { message: result.message, details: result.details };
+      // Simple test to see if we can reach the API
+      const response = await fetch('https://ccsa-mobile-api.vercel.app/api/health', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        return { message: 'API health check passed', details: data };
       } else {
-        throw new Error(result.message);
+        throw new Error(`API health check failed: ${response.status}`);
       }
     });
 

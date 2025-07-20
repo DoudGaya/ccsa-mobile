@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import optimizedLocationService from '../../services/optimizedLocationService';
+import { lazyLocationService } from '../../services/lazyLocationService';
 
 export default function StateSelect({ selectedValue, onValueChange, placeholder, error }) {
   const [modalVisible, setModalVisible] = useState(false);
@@ -22,13 +22,14 @@ export default function StateSelect({ selectedValue, onValueChange, placeholder,
     loadStates();
   }, []);
 
-  const loadStates = async () => {
+  const loadStates = () => {
     try {
       setLoading(true);
-      const statesData = await optimizedLocationService.getStates();
+      const statesData = lazyLocationService.getStates();
+      console.log('🏛️ StateSelect: Loaded states:', statesData.length);
       setStates(statesData);
     } catch (error) {
-      console.error('Error loading states:', error);
+      console.error('❌ Error loading states:', error);
     } finally {
       setLoading(false);
     }

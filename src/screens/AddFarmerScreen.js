@@ -394,11 +394,17 @@ export default function AddFarmerScreen({ navigation }) {
       // Test network connectivity first (without auth)
       console.log('Testing network connectivity...');
       try {
-        const testResult = await ninService.testConnection();
-        console.log('Network test result:', testResult);
-        if (!testResult.success) {
-          console.warn('Network test failed:', testResult.message);
-        }
+        // Simple network test - try to reach the API health endpoint
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
+        await fetch('https://ccsa-mobile-api.vercel.app/api/health', { 
+          method: 'GET',
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        console.log('Network connectivity test passed');
       } catch (networkError) {
         console.error('Network test failed:', networkError);
         // Still continue with the main lookup in case the test endpoint doesn't work
@@ -426,7 +432,6 @@ export default function AddFarmerScreen({ navigation }) {
 
       // Try NIN lookup
       const ninData = await ninService.lookupNIN(nin);
-      
       setValue('nin', nin);
       setNinData(ninData);
       setNinValidated(true);
@@ -471,7 +476,6 @@ export default function AddFarmerScreen({ navigation }) {
 
     checkAuth();
   }, [user, navigation]);
-
   if (loading && currentStep === 1) {
     return <LoadingScreen message="Looking up NIN..." />;
   }

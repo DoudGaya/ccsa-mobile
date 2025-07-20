@@ -1,92 +1,34 @@
 import { auth } from './firebase';
+import { logger } from '../utils/secureLogger';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://192.168.10.122:3000/api';
-
-// Alternative API endpoints to try if the primary fails
-const FALLBACK_API_URLS = [
-  'http://192.168.10.122:3000/api',  // Primary from .env
-  'http://192.168.10.138:3000/api',  // Fallback 1
-  'http://192.168.1.100:3000/api',   // Common router subnet
-  'http://192.168.0.100:3000/api',   // Another common subnet
-  'http://10.0.0.100:3000/api',      // Corporate network
-  'http://localhost:3000/api',       // Local development
-  'http://127.0.0.1:3000/api',       // Local development alternative
-];
-
-// Alternative ports to try
-const FALLBACK_PORTS = [3000, 3001, 8000, 8080, 5000, 4000];
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://ccsa-mobile-api.vercel.app/api';
 
 // Network timeout configuration
-const NETWORK_TIMEOUT = 15000; // 15 seconds
+const NETWORK_TIMEOUT = 30000; // 30 seconds
 const RETRY_ATTEMPTS = 2;
 
-// Helper function to find a working API endpoint
-const findWorkingEndpoint = async () => {
-  const endpointsToTry = [API_BASE_URL, ...FALLBACK_API_URLS];
+// Helper function to parse date in dd-mm-yyyy format
+const parseNINDate = (dateString) => {
+  if (!dateString) return '';
   
-  console.log(`🔍 Searching for working backend server...`);
-  console.log(`📋 Will test ${endpointsToTry.length} endpoints`);
+  // Handle dd-mm-yyyy format
+  const datePattern = /^(\d{1,2})-(\d{1,2})-(\d{4})$/;
+  const match = dateString.match(datePattern);
   
-  for (const endpoint of endpointsToTry) {
-    try {
-      console.log(`🧪 Testing endpoint: ${endpoint}`);
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 5000);
-      
-      const response = await fetch(`${endpoint}/test`, {
-        method: 'GET',
-        signal: controller.signal,
-        headers: { 'Content-Type': 'application/json' }
-      });
-      
-      clearTimeout(timeoutId);
-      
-      if (response.ok) {
-        console.log(`✅ Working endpoint found: ${endpoint}`);
-        return endpoint;
-      } else {
-        console.log(`⚠️ Endpoint responded with status ${response.status}: ${endpoint}`);
-      }
-    } catch (error) {
-      console.log(`❌ Endpoint failed: ${endpoint} - ${error.message}`);
-      continue;
-    }
+  if (match) {
+    const [, day, month, year] = match;
+    // Convert to ISO format (yyyy-mm-dd)
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
   }
   
-  console.error('🚨 No working endpoints found!');
-  console.log('💡 Possible solutions:');
-  console.log('   1. Check if your backend server is running');
-  console.log('   2. Verify the correct IP address and port');
-  console.log('   3. Use the BackendDiscovery component to find your server');
-  console.log('   4. Update your .env file with the correct API_BASE_URL');
-  
-  // Throw error instead of returning default to make the issue clear
-  throw new Error('Backend server not accessible. Please check if the server is running and verify the IP address in your .env file.');
-};
-
-// Helper function to check network connectivity
-const checkNetworkConnection = async () => {
-  try {
-    // Try a simple network request to check connectivity
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
-    
-    try {
-      const response = await fetch('https://www.google.com', {
-        method: 'HEAD',
-        signal: controller.signal,
-        cache: 'no-cache'
-      });
-      clearTimeout(timeoutId);
-      return response.ok;
-    } catch (error) {
-      clearTimeout(timeoutId);
-      return false;
-    }
-  } catch (error) {
-    console.warn('Network check failed:', error);
-    return true; // Assume connected if we can't check
+  // If it doesn't match dd-mm-yyyy, try to parse as-is
+  const date = new Date(dateString);
+  if (!isNaN(date.getTime())) {
+    return date.toISOString().split('T')[0]; // Return yyyy-mm-dd format
   }
+  
+  console.warn(`Could not parse date: ${dateString}`);
+  return '';
 };
 
 // Helper function to create fetch with timeout
@@ -116,23 +58,25 @@ const retryNetworkRequest = async (requestFn, maxAttempts = RETRY_ATTEMPTS) => {
   
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      console.log(`NIN API attempt ${attempt}/${maxAttempts}`);
+      console.log(`� NIN API attempt ${attempt}/${maxAttempts}`);
       return await requestFn();
     } catch (error) {
       lastError = error;
-      console.log(`Attempt ${attempt} failed:`, error.message);
+      console.log(`❌ Attempt ${attempt} failed:`, error.message);
       
       // Don't retry for authentication or validation errors
       if (error.message.includes('authenticated') || 
           error.message.includes('11 digits') ||
-          error.message.includes('Invalid response format')) {
+          error.message.includes('Invalid response format') ||
+          error.message.includes('NIN not found') ||
+          error.message.includes('Authentication failed')) {
         throw error;
       }
       
       // Wait before retrying (exponential backoff)
       if (attempt < maxAttempts) {
         const delay = Math.min(1000 * Math.pow(2, attempt - 1), 5000);
-        console.log(`Waiting ${delay}ms before retry...`);
+        console.log(`⏳ Waiting ${delay}ms before retry...`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
@@ -140,40 +84,15 @@ const retryNetworkRequest = async (requestFn, maxAttempts = RETRY_ATTEMPTS) => {
   
   throw lastError;
 };
-// Helper function to parse date in dd-mm-yyyy format
-const parseNINDate = (dateString) => {
-  if (!dateString) return '';
-  
-  // Handle dd-mm-yyyy format
-  const datePattern = /^(\d{1,2})-(\d{1,2})-(\d{4})$/;
-  const match = dateString.match(datePattern);
-  
-  if (match) {
-    const [, day, month, year] = match;
-    // Convert to ISO format (yyyy-mm-dd)
-    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-  }
-  
-  // If it doesn't match dd-mm-yyyy, try to parse as-is
-  const date = new Date(dateString);
-  if (!isNaN(date.getTime())) {
-    return date.toISOString().split('T')[0]; // Return yyyy-mm-dd format
-  }
-  
-  console.warn(`Could not parse date: ${dateString}`);
-  return '';
-};
 
 const getAuthToken = async () => {
   const user = auth.currentUser;
-  console.log('Current user:', user ? 'User logged in' : 'No user logged in');
+  console.log('� Current user:', user ? 'User logged in' : 'No user logged in');
   if (!user) throw new Error('User not authenticated');
   
   // Force refresh the token to ensure it's valid
   const token = await user.getIdToken(true);
-  console.log('Token obtained:', token ? 'Token exists' : 'No token');
-  console.log('Token length:', token ? token.length : 'No token');
-  console.log('Token preview:', token ? token.substring(0, 50) + '...' : 'No token');
+  console.log('🔑 Token obtained, length:', token ? token.length : 'No token');
   
   return token;
 };
@@ -183,126 +102,119 @@ export const ninService = {
   async lookupNIN(nin) {
     try {
       console.log('=== NIN LOOKUP START ===');
-      console.log('NIN:', nin);
-      console.log('API_BASE_URL:', API_BASE_URL);
+      console.log('🔍 NIN provided:', nin ? '****masked****' : 'null');
+      console.log('🌐 Using API_BASE_URL:', API_BASE_URL);
       
       if (!nin || nin.length !== 11) {
-        throw new Error('NIN must be 11 digits long');
+        throw new Error('NIN must be exactly 11 digits');
       }
-      
-      // Check network connectivity first
-      console.log('Checking network connectivity...');
-      const isConnected = await checkNetworkConnection();
-      if (!isConnected) {
-        throw new Error('No internet connection. Please check your network and try again.');
-      }
-      
-      // Find a working API endpoint
-      console.log('Finding working API endpoint...');
-      const workingEndpoint = await findWorkingEndpoint();
-      console.log('Using endpoint:', workingEndpoint);
       
       // Wrap the lookup logic in retry mechanism
       return await retryNetworkRequest(async () => {
         // First try the temp endpoint for testing
-        const tempUrl = `${workingEndpoint}/temp-nin/lookup?nin=${nin}`;
-        console.log('Making request to temp endpoint:', tempUrl);
+        const tempUrl = `${API_BASE_URL}/temp-nin/lookup?nin=${nin}`;
+        console.log('🔍 Making request to temp endpoint:', tempUrl);
         
-        const tempResponse = await fetchWithTimeout(tempUrl, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
+        try {
+          const tempResponse = await fetchWithTimeout(tempUrl, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
 
-        console.log('Temp response status:', tempResponse.status);
-        console.log('Temp response headers:', Object.fromEntries(tempResponse.headers.entries()));
-        
-        if (tempResponse.ok) {
-          const result = await tempResponse.json();
-          console.log('Temp NIN endpoint raw response:', JSON.stringify(result, null, 2));
+          console.log('📊 Temp response status:', tempResponse.status);
+          console.log('📊 Temp response headers:', Object.fromEntries(tempResponse.headers.entries()));
           
-          if (result.success && result.data) {
-            // Destructure the API response based on actual structure
-            const {
-              firstname,
-              middlename,
-              surname,
-              dateofbirth,
-              gender,
-              email,
-              telephoneno,
-              msisdn,
-              emplymentstatus,
-              educationallevel,
-              maritalstatus,
-              residence_state,
-              residence_lga,
-              residence_address,
-              birthstate,
-              birthlga,
-              'residence-address1': residenceAddress1,
-              photo,
-              signature,
-              ...rest
-            } = result.data;
+          if (tempResponse.ok) {
+            const result = await tempResponse.json();
+            console.log('📊 Temp NIN endpoint raw response:', JSON.stringify(result, null, 2));
+            
+            if (result.success && result.data) {
+              // Destructure the API response based on actual structure
+              const {
+                firstname,
+                middlename,
+                surname,
+                dateofbirth,
+                gender,
+                email,
+                telephoneno,
+                msisdn,
+                emplymentstatus,
+                educationallevel,
+                maritalstatus,
+                residence_state,
+                residence_lga,
+                residence_address,
+                birthstate,
+                birthlga,
+                'residence-address1': residenceAddress1,
+                photo,
+                signature,
+                ...rest
+              } = result.data;
 
-            console.log('Destructured fields:', {
-              firstname,
-              middlename,
-              surname,
-              dateofbirth,
-              gender,
-              email,
-              telephoneno,
-              msisdn,
-              emplymentstatus,
-              educationallevel,
-              maritalstatus,
-              residence_state,
-              residence_lga,
-              residence_address,
-              birthstate,
-              birthlga,
-              residenceAddress1,
-              photo: photo ? 'present' : 'null',
-              signature: signature ? 'present' : 'null'
-            });
+              console.log('📋 Destructured fields:', {
+                firstname,
+                middlename,
+                surname,
+                dateofbirth,
+                gender,
+                email,
+                telephoneno,
+                msisdn,
+                emplymentstatus,
+                educationallevel,
+                maritalstatus,
+                residence_state,
+                residence_lga,
+                residence_address,
+                birthstate,
+                birthlga,
+                residenceAddress1,
+                photo: photo ? 'present' : 'null',
+                signature: signature ? 'present' : 'null'
+              });
 
-            // Map the API response to our form structure (only essential fields)
-            const mappedData = {
-              nin: nin,
-              firstName: firstname || '',
-              middleName: middlename || '',
-              lastName: surname || '',
-              dateOfBirth: parseNINDate(dateofbirth), // Convert to proper format
-              gender: gender?.toUpperCase() || '',
-              state: birthstate || residence_state || '', // Use birthstate as primary, fallback to residence_state
-              lga: birthlga || residence_lga || '', // Use birthlga as primary, fallback to residence_lga
-              maritalStatus: maritalstatus || '',
-              employmentStatus: emplymentstatus || '',
-              photoUrl: photo || '', // Add photo URL from NIN API
-              // Raw data for debugging
-              _rawData: result.data
-            };
+              // Map the API response to our form structure (only essential fields)
+              const mappedData = {
+                nin: nin,
+                firstName: firstname || '',
+                middleName: middlename || '',
+                lastName: surname || '',
+                dateOfBirth: parseNINDate(dateofbirth), // Convert to proper format
+                gender: gender?.toUpperCase() || '',
+                state: birthstate || residence_state || '', // Use birthstate as primary, fallback to residence_state
+                lga: birthlga || residence_lga || '', // Use birthlga as primary, fallback to residence_lga
+                maritalStatus: maritalstatus || '',
+                employmentStatus: emplymentstatus || '',
+                photoUrl: photo || '', // Add photo URL from NIN API
+                // Raw data for debugging
+                _rawData: result.data
+              };
 
-            console.log('Mapped data:', JSON.stringify(mappedData, null, 2));
-            console.log('=== NIN LOOKUP SUCCESS (TEMP) ===');
-            return mappedData;
+              console.log('📋 Mapped data:', JSON.stringify(mappedData, null, 2));
+              console.log('✅ NIN LOOKUP SUCCESS (TEMP ENDPOINT)');
+              return mappedData;
+            } else {
+              throw new Error(result.message || 'No data found for this NIN');
+            }
           } else {
-            throw new Error(result.message || 'No data found for this NIN');
+            const error = await tempResponse.json().catch(() => ({ message: 'Server error occurred' }));
+            console.log('⚠️ Temp endpoint error, trying authenticated endpoint:', error);
+            throw new Error('Temp endpoint failed');
           }
-        } else {
-          const error = await tempResponse.json().catch(() => ({ message: 'Server error occurred' }));
-          console.log('Temp endpoint error, trying authenticated endpoint:', error);
+        } catch (tempError) {
+          console.log('⚠️ Temp endpoint failed, trying authenticated endpoint...');
           
           // Fall back to authenticated endpoint (real NIN API)
-          console.log('Getting auth token...');
+          console.log('🔑 Getting auth token...');
           const token = await getAuthToken();
-          console.log('Auth token obtained, making authenticated API request...');
+          console.log('� Auth token obtained, making authenticated API request...');
           
-          const authUrl = `${workingEndpoint}/nin/lookup?nin=${nin}`;
-          console.log('Making authenticated request to:', authUrl);
+          const authUrl = `${API_BASE_URL}/nin/lookup?nin=${nin}`;
+          console.log('🔍 Making authenticated request to:', authUrl);
           
           const authResponse = await fetchWithTimeout(authUrl, {
             method: 'GET',
@@ -312,12 +224,12 @@ export const ninService = {
             },
           });
 
-          console.log('Authenticated response status:', authResponse.status);
-          console.log('Authenticated response headers:', Object.fromEntries(authResponse.headers.entries()));
+          console.log('📊 Authenticated response status:', authResponse.status);
+          console.log('📊 Authenticated response headers:', Object.fromEntries(authResponse.headers.entries()));
           
           if (!authResponse.ok) {
             const authError = await authResponse.json().catch(() => ({ message: 'Server error occurred' }));
-            console.log('Authenticated API error response:', authError);
+            console.log('📊 Authenticated API error response:', authError);
             
             // Handle specific HTTP status codes
             if (authResponse.status === 404) {
@@ -336,7 +248,7 @@ export const ninService = {
           }
 
           const authResult = await authResponse.json();
-          console.log('Authenticated API raw response:', JSON.stringify(authResult, null, 2));
+          console.log('📊 Authenticated API raw response:', JSON.stringify(authResult, null, 2));
           
           if (authResult.success && authResult.data) {
             // Destructure the API response based on actual structure
@@ -363,7 +275,7 @@ export const ninService = {
               ...rest
             } = authResult.data;
 
-            console.log('Destructured fields (auth):', {
+            console.log('📋 Destructured fields (auth):', {
               firstname,
               middlename,
               surname,
@@ -402,8 +314,8 @@ export const ninService = {
               _rawData: authResult.data
             };
 
-            console.log('Mapped data (auth):', JSON.stringify(mappedData, null, 2));
-            console.log('=== NIN LOOKUP SUCCESS (AUTH) ===');
+            console.log('📋 Mapped data (auth):', JSON.stringify(mappedData, null, 2));
+            console.log('✅ NIN LOOKUP SUCCESS (AUTHENTICATED ENDPOINT)');
             return mappedData;
           } else {
             throw new Error(authResult.message || 'No data found for this NIN');
@@ -411,21 +323,18 @@ export const ninService = {
         }
       });
     } catch (error) {
-      console.error('NIN lookup error:', error);
+      console.error('❌ NIN lookup error:', error);
+      console.log('=== NIN LOOKUP FAILED ===');
       
       // Provide user-friendly error messages
       let userFriendlyMessage;
       
       if (error.message === 'User not authenticated') {
         userFriendlyMessage = 'Authentication required. Please log in to continue.';
-      } else if (error.message.includes('Backend server not accessible')) {
-        userFriendlyMessage = 'Cannot connect to backend server. Please check if the server is running and verify your network settings.';
-      } else if (error.message.includes('No internet connection')) {
-        userFriendlyMessage = error.message;
       } else if (error.message.includes('Request timed out')) {
         userFriendlyMessage = 'Request timed out. The server may be slow. Please try again.';
       } else if (error.message.includes('Network request failed') || error.message.includes('fetch')) {
-        userFriendlyMessage = 'Network error. Please check your internet connection and server status.';
+        userFriendlyMessage = 'Network error. Please check your internet connection and try again.';
       } else if (error.message.includes('Invalid token') || error.message.includes('Authentication failed')) {
         userFriendlyMessage = 'Authentication session expired. Please log out and log in again.';
       } else if (error.message.includes('NIN not found')) {
@@ -440,7 +349,7 @@ export const ninService = {
         userFriendlyMessage = 'No information found for this NIN. Please verify the NIN is correct.';
       } else {
         // Keep the original message for any other errors
-        userFriendlyMessage = error.message || 'An unexpected error occurred. Please try again.';
+        userFriendlyMessage = error.message || 'An unexpected error occurred during NIN lookup. Please try again.';
       }
       
       // Throw a new error with the user-friendly message
@@ -453,70 +362,45 @@ export const ninService = {
   // Test network connectivity to NIN service
   async testConnection() {
     try {
-      console.log('Testing NIN service connectivity...');
+      console.log('🧪 Testing NIN service connectivity...');
       
-      const isConnected = await checkNetworkConnection();
-      if (!isConnected) {
+      // Test the health endpoint first
+      const healthUrl = `${API_BASE_URL}/health`;
+      console.log('🔍 Testing health endpoint:', healthUrl);
+      
+      const healthResponse = await fetchWithTimeout(healthUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }, 10000);
+
+      if (healthResponse.ok) {
+        const healthResult = await healthResponse.json();
+        console.log('✅ Health endpoint accessible:', healthResult);
+        
+        return {
+          success: true,
+          message: 'NIN service is accessible',
+          details: {
+            endpoint: API_BASE_URL,
+            healthCheck: healthResult,
+            timestamp: new Date().toISOString()
+          }
+        };
+      } else {
         return {
           success: false,
-          message: 'No internet connection detected',
-          details: 'Device appears to be offline'
+          message: `Health endpoint returned ${healthResponse.status}`,
+          details: {
+            endpoint: API_BASE_URL,
+            status: healthResponse.status,
+            statusText: healthResponse.statusText
+          }
         };
       }
-      
-      // Test all available endpoints
-      const endpointResults = [];
-      const endpointsToTest = [API_BASE_URL, ...FALLBACK_API_URLS];
-      
-      for (const endpoint of endpointsToTest) {
-        try {
-          const testUrl = `${endpoint}/test`;
-          const response = await fetchWithTimeout(testUrl, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          }, 10000);
-
-          if (response.ok) {
-            const result = await response.json();
-            endpointResults.push({
-              endpoint,
-              status: 'success',
-              message: 'Accessible',
-              data: result
-            });
-          } else {
-            endpointResults.push({
-              endpoint,
-              status: 'error',
-              message: `HTTP ${response.status}: ${response.statusText}`
-            });
-          }
-        } catch (error) {
-          endpointResults.push({
-            endpoint,
-            status: 'error',
-            message: error.message
-          });
-        }
-      }
-      
-      const workingEndpoints = endpointResults.filter(r => r.status === 'success');
-      
-      return {
-        success: workingEndpoints.length > 0,
-        message: workingEndpoints.length > 0 
-          ? `${workingEndpoints.length} endpoint(s) accessible`
-          : 'No endpoints accessible',
-        details: {
-          workingEndpoints: workingEndpoints.length,
-          totalTested: endpointResults.length,
-          results: endpointResults
-        }
-      };
     } catch (error) {
-      console.error('NIN service test failed:', error);
+      console.error('❌ NIN service test failed:', error);
       
       let message;
       if (error.message.includes('Request timed out')) {
@@ -530,10 +414,12 @@ export const ninService = {
       return {
         success: false,
         message,
-        details: error.message
+        details: {
+          endpoint: API_BASE_URL,
+          error: error.message,
+          timestamp: new Date().toISOString()
+        }
       };
     }
   }
 };
-
-

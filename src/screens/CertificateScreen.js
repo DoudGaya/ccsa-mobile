@@ -13,7 +13,6 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import QRCode from 'react-native-qrcode-svg';
-import RNHTMLtoPDF from 'react-native-html-to-pdf';
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import * as Print from 'expo-print';
@@ -67,47 +66,8 @@ export default function CertificateScreen({ navigation, route }) {
       // Generate HTML content for the certificate
       const htmlContent = generateCertificateHTML(farmer);
       
-      if (Platform.OS === 'ios') {
-        // For iOS, use expo-print for proper PDF generation
-        await generatePDFWithExpo(htmlContent, farmer.nin);
-      } else {
-        // For Android, use react-native-html-to-pdf
-        const options = {
-          html: htmlContent,
-          fileName: `farmer_certificate_${farmer.nin}`,
-          directory: 'Documents',
-          base64: false,
-          width: 792, // A4 width in points
-          height: 612, // A4 height in points (landscape)
-          orientation: 'landscape',
-          border: {
-            top: 0,
-            right: 0,
-            bottom: 0,
-            left: 0
-          }
-        };
-
-        const file = await RNHTMLtoPDF.convert(options);
-        
-        if (file.filePath) {
-          Alert.alert(
-            'Certificate Generated',
-            'Farmer certificate has been generated successfully!',
-            [
-              {
-                text: 'View PDF',
-                onPress: () => viewPDF(file.filePath)
-              },
-              {
-                text: 'Share PDF',
-                onPress: () => sharePDF(file.filePath)
-              },
-              { text: 'OK' }
-            ]
-          );
-        }
-      }
+      // Use expo-print for both iOS and Android
+      await generatePDFWithExpo(htmlContent, farmer.nin);
     } catch (error) {
       console.error('Certificate generation error:', error);
       Alert.alert('Error', 'Failed to generate certificate. Please try again.');

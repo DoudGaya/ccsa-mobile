@@ -42,21 +42,14 @@ export const useFarmerStore = create((set, get) => ({
   fetchFarmers: async () => {
     try {
       set({ loading: true, error: null });
-      console.log('🔄 Starting fetchFarmers...');
       
       // Check authentication first
       if (!auth.currentUser) {
-        console.log('❌ No authenticated user found');
         throw new Error('User not authenticated');
       }
       
-      console.log('✅ Authenticated user:', auth.currentUser.email);
-      
       // Call the API with pagination
       const response = await farmerService.getFarmers(1, 1000);
-      console.log('✅ getFarmers API response:', response);
-      console.log('✅ Response type:', typeof response);
-      console.log('✅ Response keys:', Object.keys(response || {}));
       
       // Extract farmers array from the paginated response
       let farmers = [];
@@ -64,31 +57,21 @@ export const useFarmerStore = create((set, get) => ({
         if (Array.isArray(response)) {
           // If response is directly an array
           farmers = response;
-          console.log('✅ Response is direct array with', farmers.length, 'farmers');
         } else if (response.farmers && Array.isArray(response.farmers)) {
           // If response has farmers property
           farmers = response.farmers;
-          console.log('✅ Response.farmers array with', farmers.length, 'farmers');
         } else if (response.data && Array.isArray(response.data)) {
           // If response has data property
           farmers = response.data;
-          console.log('✅ Response.data array with', farmers.length, 'farmers');
         } else {
-          console.log('❌ Unexpected response structure:', response);
           farmers = [];
         }
       }
       
-      console.log('✅ Final farmers array length:', farmers.length);
-      console.log('✅ Sample farmer:', farmers[0]);
-      
       set({ farmers, loading: false });
       return farmers;
     } catch (error) {
-      console.error('❌ Error fetching farmers:', error);
-      console.error('❌ Error name:', error.name);
-      console.error('❌ Error message:', error.message);
-      console.error('❌ Error stack:', error.stack);
+      console.error('Error fetching farmers:', error);
       
       set({ 
         farmers: [],

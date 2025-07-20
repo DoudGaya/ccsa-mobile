@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import optimizedLocationService from '../../services/optimizedLocationService';
+import { lazyLocationService } from '../../services/lazyLocationService';
 
 export default function WardSelect({ selectedState, selectedLGA, selectedValue, onValueChange, placeholder, error }) {
   const [modalVisible, setModalVisible] = useState(false);
@@ -21,13 +21,14 @@ export default function WardSelect({ selectedState, selectedLGA, selectedValue, 
   // Load wards when state or LGA changes
   useEffect(() => {
     const loadWards = async () => {
-      if (selectedState && selectedLGA) {
+      if (selectedLGA) {
         setLoading(true);
         try {
-          const wardData = await optimizedLocationService.getWardsForLga(selectedState, selectedLGA);
+          const wardData = await lazyLocationService.getWards(selectedLGA);
+          console.log(`🏡 WardSelect: Loaded ${wardData.length} wards for LGA ${selectedLGA}`);
           setWards(wardData);
         } catch (error) {
-          console.error('WardSelect: Error loading wards:', error);
+          console.error('❌ WardSelect: Error loading wards:', error);
           setWards([]);
         } finally {
           setLoading(false);
@@ -38,7 +39,7 @@ export default function WardSelect({ selectedState, selectedLGA, selectedValue, 
     };
 
     loadWards();
-  }, [selectedState, selectedLGA]);
+  }, [selectedLGA]);
 
   const filteredWards = wards.filter(ward =>
     ward.name.toLowerCase().includes(searchQuery.toLowerCase())

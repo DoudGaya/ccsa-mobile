@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import {
   View,
   Text,
@@ -6,10 +6,47 @@ import {
   StyleSheet,
   Image,
   SafeAreaView,
+  Platform,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function WelcomeScreen({ navigation }) {
+  useEffect(() => {
+    console.log('WelcomeScreen loaded on:', Platform.OS);
+    if (Platform.OS === 'android') {
+      console.log('Android Welcome Screen - Navigation object:', !!navigation);
+      // Alert to confirm screen is loading on Android
+      setTimeout(() => {
+        Alert.alert('Debug', 'Welcome Screen loaded on Android', [
+          { text: 'Continue', onPress: () => console.log('User acknowledged Android load') }
+        ]);
+      }, 1000);
+    }
+  }, [navigation]);
+
+  const handleGetStarted = () => {
+    console.log('Get Started pressed on:', Platform.OS);
+    try {
+      // On Android, go to permission debug screen first
+      if (Platform.OS === 'android') {
+        Alert.alert(
+          'Android Debug Mode',
+          'Check permissions before proceeding?',
+          [
+            { text: 'Check Permissions', onPress: () => navigation.navigate('PermissionDebug') },
+            { text: 'Skip to Login', onPress: () => navigation.navigate('Login') }
+          ]
+        );
+      } else {
+        navigation.navigate('Login');
+      }
+    } catch (error) {
+      console.error('Navigation error:', error);
+      Alert.alert('Navigation Error', error.message);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.content}>
@@ -17,7 +54,7 @@ export default function WelcomeScreen({ navigation }) {
         <View style={styles.header}>
           <View style={styles.logoContainer}>
             <Image 
-              source={require('../../assets/logo-no-bg.50099d39.png')}
+              source={require('../../assets/icon.png')}
               style={styles.logo}
               resizeMode="contain"
             />
@@ -55,17 +92,17 @@ export default function WelcomeScreen({ navigation }) {
         <View style={styles.buttons}>
           <TouchableOpacity
             style={styles.primaryButton}
-            onPress={() => navigation.navigate('Login')}
+            onPress={handleGetStarted}
           >
             <Text style={styles.primaryButtonText}>Login</Text>
           </TouchableOpacity>
           
-          <TouchableOpacity
+          {/* <TouchableOpacity
             style={styles.secondaryButton}
             onPress={() => navigation.navigate('Register')}
           >
             <Text style={styles.secondaryButtonText}>Create Account</Text>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
         </View>
 
         {/* Footer */}

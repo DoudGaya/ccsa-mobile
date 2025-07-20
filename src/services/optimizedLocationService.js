@@ -1,3 +1,5 @@
+import locationDataLoader from '../utils/locationDataLoader';
+
 class OptimizedLocationService {
   constructor() {
     this.cache = {
@@ -34,7 +36,8 @@ class OptimizedLocationService {
       this.loading.states = true;
       console.log('🏛️ Loading states...');
       
-      const statesData = require('../../assets/location/states.json');
+      // Load states data using the data loader
+      const statesData = locationDataLoader.getStatesData();
       this.cache.states = statesData;
       
       console.log(`✅ Loaded ${statesData.length} states`);
@@ -83,8 +86,7 @@ class OptimizedLocationService {
 
       // Load the entire LGAs data file once and cache the specific state's LGAs
       if (!this.cache.allLgasByState) {
-        const lgasData = require('../../assets/location/lgas-by-state.json');
-        this.cache.allLgasByState = lgasData;
+        this.cache.allLgasByState = locationDataLoader.getLgasData();
       }
 
       const lgas = this.cache.allLgasByState[stateValue] || [];
@@ -137,8 +139,7 @@ class OptimizedLocationService {
       this.loading.wards[cacheKey] = true;
       console.log(`🏡 Loading wards for LGA: ${stateValue}-${lgaValue}...`);
       if (!this.cache.allWardsByLga) {
-        const wardsData = require('../../assets/location/wards-by-lga.json');
-        this.cache.allWardsByLga = wardsData;
+        this.cache.allWardsByLga = locationDataLoader.getWardsData();
       }
 
       const wards = this.cache.allWardsByLga[cacheKey] || [];
@@ -194,8 +195,7 @@ class OptimizedLocationService {
 
       // Load the entire polling units data file once and cache the specific ward's polling units
       if (!this.cache.allPollingUnitsByWard) {
-        const pollingData = require('../../assets/location/polling-units-by-ward.json');
-        this.cache.allPollingUnitsByWard = pollingData;
+        this.cache.allPollingUnitsByWard = locationDataLoader.getPollingUnitsData();
       }
 
       const pollingUnits = this.cache.allPollingUnitsByWard[cacheKey] || [];

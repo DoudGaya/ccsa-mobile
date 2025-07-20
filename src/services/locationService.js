@@ -1,180 +1,275 @@
-import nigeriaData from '../../assets/nigeria.json';
-
+// Complete location service with hierarchical data loading
 class LocationService {
   constructor() {
-    this.data = nigeriaData;
-    this.statesCache = null;
-    this.lgaCache = new Map();
-    this.wardCache = new Map();
-    this.pollingUnitCache = new Map();
+    this.data = null;
+    this.cache = {
+      states: null,
+      lgasByState: new Map(),
+      wardsByLga: new Map(),
+      pollingUnitsByWard: new Map()
+    };
     
-    console.log('LocationService initialized with', this.data?.length || 0, 'states');
+    console.log('🚀 LocationService initialized');
   }
 
-  // Get all states with caching
-  getStates() {
-    if (this.statesCache) {
-      return this.statesCache;
+  // Load the complete data structure
+  loadData() {
+    if (this.data) {
+      return this.data;
     }
 
     try {
-      this.statesCache = this.data.map(state => ({
-        id: state.state,
-        name: this.formatName(state.state),
-        value: state.state
-      }));
+      // Load the complete hierarchical data
+      console.log('📂 LocationService: Loading data from ../../data/states-and-lgas-and-wards-and-polling-units.json');
       
-      console.log('States loaded:', this.statesCache.length);
-      return this.statesCache;
+      // Try to require the data file
+      this.data = require('../../data/states-and-lgas-and-wards-and-polling-units.json');
+      
+      if (!this.data) {
+        console.error('❌ LocationService: Data is null after require');
+        throw new Error('Data file returned null');
+      }
+      
+      if (!Array.isArray(this.data)) {
+        console.error('❌ LocationService: Data is not an array, type:', typeof this.data);
+        throw new Error('Data is not an array');
+      }
+      
+      if (this.data.length === 0) {
+        console.error('❌ LocationService: Data array is empty');
+        throw new Error('Data array is empty');
+      }
+      
+      console.log('✅ LocationService: Loaded complete data with', this.data.length, 'states');
+      console.log('📊 LocationService: Sample states:', this.data.slice(0, 3).map(s => s.state));
+      
+      // Verify specific states exist
+      const kano = this.data.find(s => s.state === 'kano');
+      const jigawa = this.data.find(s => s.state === 'jigawa');
+      const abia = this.data.find(s => s.state === 'abia');
+      
+      console.log('🔍 LocationService: State verification:');
+      console.log('   - Kano:', kano ? `✅ ${kano.lgas.length} LGAs` : '❌ Not found');
+      console.log('   - Jigawa:', jigawa ? `✅ ${jigawa.lgas.length} LGAs` : '❌ Not found');
+      console.log('   - Abia:', abia ? `✅ ${abia.lgas.length} LGAs` : '❌ Not found');
+      
+      return this.data;
     } catch (error) {
-      console.error('Error loading states:', error);
+      console.error('❌ LocationService: Error loading complete data:', error);
+      console.error('❌ LocationService: Error details:', {
+        message: error.message,
+        stack: error.stack?.split('\n')[0],
+        name: error.name
+      });
+      
+      // Try alternative loading method
+      console.log('🔄 LocationService: Attempting alternative data loading...');
+      try {
+        // Import the data using dynamic import (for React Native)
+        const alternativeData = require('../../data/states-and-lgas-and-wards-and-polling-units.json');
+        if (alternativeData && Array.isArray(alternativeData) && alternativeData.length > 0) {
+          console.log('✅ LocationService: Alternative loading successful');
+          this.data = alternativeData;
+          return this.data;
+        }
+      } catch (altError) {
+        console.error('❌ LocationService: Alternative loading also failed:', altError.message);
+      }
+      
+      throw new Error(`Failed to load location data: ${error.message}`);
+    }
+  }
+
+  // Get all states
+  async getStates() {
+    if (this.cache.states) {
+      console.log('📋 LocationService: Returning cached states');
+      return this.cache.states;
+    }
+
+    try {
+      const data = this.loadData();
+      const formattedStates = data.map(stateData => ({
+        id: stateData.state,
+        name: this.formatName(stateData.state),
+        value: stateData.state,
+        label: this.formatName(stateData.state)
+      }));
+
+      this.cache.states = formattedStates;
+      console.log('✅ LocationService: Loaded states:', formattedStates.length);
+      return formattedStates;
+    } catch (error) {
+      console.error('❌ LocationService: Error loading states:', error);
+      throw new Error(`Could not load states data: ${error.message}`);
+    }
+  }
+
+  // Get LGAs for a specific state
+  async getLGAs(stateId) {
+    if (!stateId) {
+      console.warn('❌ LocationService: No stateId provided to getLGAs');
       return [];
     }
-  }
 
-  // Get local governments for a specific state with caching
-  getLocalGovernments(stateId) {
-    if (!stateId) return [];
-    
-    const cacheKey = stateId;
-    if (this.lgaCache.has(cacheKey)) {
-      return this.lgaCache.get(cacheKey);
+    // Check cache first
+    if (this.cache.lgasByState.has(stateId)) {
+      console.log(`📋 LocationService: Returning cached LGAs for ${stateId}`);
+      return this.cache.lgasByState.get(stateId);
     }
 
     try {
-      const state = this.data.find(s => s.state === stateId);
-      if (!state || !state.lgas) {
-        console.warn('State not found or has no LGAs:', stateId);
-        return [];
+      console.log(`🏘️ LocationService: Loading LGAs for state ${stateId}`);
+      
+      const data = this.loadData();
+      
+      if (!data || !Array.isArray(data)) {
+        throw new Error('Invalid data structure loaded');
       }
-
-      const lgas = state.lgas.map(lga => ({
+      
+      const stateData = data.find(s => s.state === stateId);
+      
+      if (!stateData) {
+        console.error(`❌ State '${stateId}' not found in data. Available states:`, data.map(s => s.state).slice(0, 5));
+        throw new Error(`State '${stateId}' not found`);
+      }
+      
+      if (!stateData.lgas || !Array.isArray(stateData.lgas)) {
+        console.error(`❌ State '${stateId}' has no LGAs or invalid LGAs structure`);
+        throw new Error(`State '${stateId}' has no LGAs`);
+      }
+      
+      const formattedLGAs = stateData.lgas.map(lga => ({
         id: lga.lga,
         name: this.formatName(lga.lga),
-        value: lga.lga
+        value: lga.lga,
+        label: this.formatName(lga.lga),
+        stateId
       }));
 
-      this.lgaCache.set(cacheKey, lgas);
-      console.log('LGAs loaded for', stateId, ':', lgas.length);
-      return lgas;
+      this.cache.lgasByState.set(stateId, formattedLGAs);
+      console.log(`✅ LocationService: Loaded ${formattedLGAs.length} LGAs for ${stateId}`);
+      return formattedLGAs;
+      
     } catch (error) {
-      console.error('Error loading LGAs for', stateId, ':', error);
-      return [];
+      console.error(`❌ LocationService: Error loading LGAs for [${stateId}]:`, error);
+      throw new Error(`Could not load LGA data from any source`);
     }
   }
 
-  // Get wards for a specific local government with caching
-  getWards(stateId, lgaId) {
-    if (!stateId || !lgaId) return [];
-    
-    const cacheKey = `${stateId}-${lgaId}`;
-    if (this.wardCache.has(cacheKey)) {
-      return this.wardCache.get(cacheKey);
+  // Get wards for a specific LGA
+  async getWards(lgaId) {
+    if (!lgaId) {
+      console.warn('❌ LocationService: No lgaId provided to getWards');
+      return [];
+    }
+
+    // Check cache first
+    if (this.cache.wardsByLga.has(lgaId)) {
+      console.log(`📋 LocationService: Returning cached wards for ${lgaId}`);
+      return this.cache.wardsByLga.get(lgaId);
     }
 
     try {
-      const state = this.data.find(s => s.state === stateId);
-      if (!state || !state.lgas) return [];
-
-      const lga = state.lgas.find(l => l.lga === lgaId);
-      if (!lga || !lga.wards) {
-        console.warn('LGA not found or has no wards:', lgaId);
-        return [];
+      console.log(`🏡 LocationService: Loading wards for LGA ${lgaId}`);
+      
+      const data = this.loadData();
+      
+      // Find the LGA across all states
+      let foundWards = [];
+      let foundState = null;
+      
+      for (const stateData of data) {
+        if (stateData.lgas) {
+          const lgaData = stateData.lgas.find(lga => lga.lga === lgaId);
+          if (lgaData && lgaData.wards) {
+            foundWards = lgaData.wards;
+            foundState = stateData.state;
+            break;
+          }
+        }
       }
-
-      const wards = lga.wards.map(ward => ({
+      
+      if (foundWards.length === 0) {
+        console.error(`❌ LGA '${lgaId}' not found in any state`);
+        throw new Error(`LGA '${lgaId}' not found`);
+      }
+      
+      const formattedWards = foundWards.map(ward => ({
         id: ward.ward,
         name: this.formatName(ward.ward),
-        value: ward.ward
+        value: ward.ward,
+        label: this.formatName(ward.ward),
+        lgaId
       }));
 
-      this.wardCache.set(cacheKey, wards);
-      console.log('Wards loaded for', lgaId, ':', wards.length);
-      return wards;
+      this.cache.wardsByLga.set(lgaId, formattedWards);
+      console.log(`✅ LocationService: Loaded ${formattedWards.length} wards for ${lgaId} (${foundState})`);
+      return formattedWards;
+      
     } catch (error) {
-      console.error('Error loading wards for', lgaId, ':', error);
-      return [];
+      console.error(`❌ LocationService: Error loading wards for ${lgaId}:`, error);
+      throw new Error(`Could not load ward data for LGA: ${lgaId}`);
     }
   }
 
-  // Get polling units for a specific ward with caching
-  getPollingUnits(stateId, lgaId, wardId) {
-    if (!stateId || !lgaId || !wardId) return [];
-    
-    const cacheKey = `${stateId}-${lgaId}-${wardId}`;
-    if (this.pollingUnitCache.has(cacheKey)) {
-      return this.pollingUnitCache.get(cacheKey);
+  // Get polling units for a specific ward
+  async getPollingUnits(wardId) {
+    if (!wardId) {
+      console.warn('❌ LocationService: No wardId provided to getPollingUnits');
+      return [];
+    }
+
+    // Check cache first
+    if (this.cache.pollingUnitsByWard.has(wardId)) {
+      console.log(`📋 LocationService: Returning cached polling units for ${wardId}`);
+      return this.cache.pollingUnitsByWard.get(wardId);
     }
 
     try {
-      const state = this.data.find(s => s.state === stateId);
-      if (!state || !state.lgas) return [];
-
-      const lga = state.lgas.find(l => l.lga === lgaId);
-      if (!lga || !lga.wards) return [];
-
-      const ward = lga.wards.find(w => w.ward === wardId);
-      if (!ward || !ward.polling_units) {
-        console.warn('Ward not found or has no polling units:', wardId);
-        return [];
+      console.log(`🗳️ LocationService: Loading polling units for ward ${wardId}`);
+      
+      const data = this.loadData();
+      
+      // Find the ward across all states and LGAs
+      let foundPollingUnits = [];
+      let foundLocation = null;
+      
+      for (const stateData of data) {
+        for (const lga of stateData.lgas || []) {
+          for (const ward of lga.wards || []) {
+            if (ward.ward === wardId) {
+              foundPollingUnits = ward.polling_units || [];
+              foundLocation = `${stateData.state}/${lga.lga}`;
+              break;
+            }
+          }
+          if (foundPollingUnits.length > 0) break;
+        }
+        if (foundPollingUnits.length > 0) break;
       }
-
-      const units = ward.polling_units.map((unit, index) => ({
-        id: `${wardId}-${index}`,
+      
+      if (foundPollingUnits.length === 0) {
+        console.error(`❌ Ward '${wardId}' not found in any LGA`);
+        throw new Error(`Ward '${wardId}' not found`);
+      }
+      
+      const formattedPollingUnits = foundPollingUnits.map(unit => ({
+        id: unit,
         name: this.formatName(unit),
-        value: unit
+        value: unit,
+        label: this.formatName(unit),
+        wardId
       }));
 
-      this.pollingUnitCache.set(cacheKey, units);
-      console.log('Polling units loaded for', wardId, ':', units.length);
-      return units;
+      this.cache.pollingUnitsByWard.set(wardId, formattedPollingUnits);
+      console.log(`✅ LocationService: Loaded ${formattedPollingUnits.length} polling units for ${wardId} (${foundLocation})`);
+      return formattedPollingUnits;
+      
     } catch (error) {
-      console.error('Error loading polling units for', wardId, ':', error);
-      return [];
+      console.error(`❌ LocationService: Error loading polling units for ${wardId}:`, error);
+      throw new Error(`Could not load polling unit data for ward: ${wardId}`);
     }
-  }
-
-  // Search states
-  searchStates(query) {
-    if (!query) return this.getStates();
-    
-    const lowercaseQuery = query.toLowerCase();
-    return this.getStates().filter(state =>
-      state.name.toLowerCase().includes(lowercaseQuery)
-    );
-  }
-
-  // Search local governments
-  searchLocalGovernments(stateId, query) {
-    const lgas = this.getLocalGovernments(stateId);
-    if (!query) return lgas;
-    
-    const lowercaseQuery = query.toLowerCase();
-    return lgas.filter(lga =>
-      lga.name.toLowerCase().includes(lowercaseQuery)
-    );
-  }
-
-  // Search wards
-  searchWards(stateId, lgaId, query) {
-    const wards = this.getWards(stateId, lgaId);
-    if (!query) return wards;
-    
-    const lowercaseQuery = query.toLowerCase();
-    return wards.filter(ward =>
-      ward.name.toLowerCase().includes(lowercaseQuery)
-    );
-  }
-
-  // Search polling units
-  searchPollingUnits(stateId, lgaId, wardId, query) {
-    const units = this.getPollingUnits(stateId, lgaId, wardId);
-    if (!query) return units;
-    
-    const lowercaseQuery = query.toLowerCase();
-    return units.filter(unit =>
-      unit.name.toLowerCase().includes(lowercaseQuery)
-    );
   }
 
   // Format names from kebab-case to Title Case
@@ -187,52 +282,28 @@ class LocationService {
       .join(' ');
   }
 
-  // Get formatted options for dropdowns
-  getFormattedStates() {
-    return [
-      { label: 'Select State', value: '' },
-      ...this.getStates().map(state => ({
-        label: state.name,
-        value: state.value
-      }))
-    ];
+  // Clear all caches
+  clearCache() {
+    this.cache.states = null;
+    this.cache.lgasByState.clear();
+    this.cache.wardsByLga.clear();
+    this.cache.pollingUnitsByWard.clear();
+    console.log('🧹 LocationService: Cache cleared');
   }
 
-  getFormattedLocalGovernments(stateId) {
-    if (!stateId) return [{ label: 'Select State First', value: '' }];
-    
-    return [
-      { label: 'Select Local Government', value: '' },
-      ...this.getLocalGovernments(stateId).map(lga => ({
-        label: lga.name,
-        value: lga.value
-      }))
-    ];
-  }
-
-  getFormattedWards(stateId, lgaId) {
-    if (!stateId || !lgaId) return [{ label: 'Select Local Government First', value: '' }];
-    
-    return [
-      { label: 'Select Ward', value: '' },
-      ...this.getWards(stateId, lgaId).map(ward => ({
-        label: ward.name,
-        value: ward.value
-      }))
-    ];
-  }
-
-  getFormattedPollingUnits(stateId, lgaId, wardId) {
-    if (!stateId || !lgaId || !wardId) return [{ label: 'Select Ward First', value: '' }];
-    
-    return [
-      { label: 'Select Polling Unit', value: '' },
-      ...this.getPollingUnits(stateId, lgaId, wardId).map(unit => ({
-        label: unit.name,
-        value: unit.value
-      }))
-    ];
+  // Get location statistics
+  getLocationStats() {
+    return {
+      totalStates: 37,
+      totalLGAs: 774,
+      totalWards: 8812,
+      totalPollingUnits: 176846,
+      lastUpdated: new Date().toISOString()
+    };
   }
 }
 
-export const locationService = new LocationService();
+// Create and export a single instance
+const locationService = new LocationService();
+export { locationService };
+export default locationService;

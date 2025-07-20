@@ -1,3 +1,5 @@
+import locationDataLoader from '../utils/locationDataLoader';
+
 class OptimizedLocationService {
   constructor() {
     this.cache = {
@@ -34,7 +36,7 @@ class OptimizedLocationService {
       this.loading.states = true;
       console.log('🏛️ Loading states...');
       
-      const statesData = require('../../assets/location/states.json');
+      const statesData = locationDataLoader.getStatesData();
       this.cache.states = statesData;
       
       console.log(`✅ Loaded ${statesData.length} states`);
@@ -83,8 +85,7 @@ class OptimizedLocationService {
 
       // Load the entire LGAs data file once and cache the specific state's LGAs
       if (!this.cache.allLgasByState) {
-        const lgasData = require('../../assets/location/lgas-by-state.json');
-        this.cache.allLgasByState = lgasData;
+        this.cache.allLgasByState = locationDataLoader.getLgasData();
       }
 
       const lgas = this.cache.allLgasByState[stateValue] || [];
@@ -139,8 +140,7 @@ class OptimizedLocationService {
 
       // Load the entire wards data file once and cache the specific LGA's wards
       if (!this.cache.allWardsByLga) {
-        const wardsData = require('../../assets/location/wards-by-lga.json');
-        this.cache.allWardsByLga = wardsData;
+        this.cache.allWardsByLga = locationDataLoader.getWardsData();
       }
 
       const wards = this.cache.allWardsByLga[cacheKey] || [];
@@ -196,56 +196,10 @@ class OptimizedLocationService {
       this.loading.polling[loadingKey] = true;
       console.log(`🗳️ Loading polling units for ward: ${cacheKey}...`);
 
-      // Load the state-specific polling units file using a mapping approach
+      // Load the state-specific polling units file using the data loader
       if (!this.cache.pollingUnitsByState[stateValue]) {
-        // Create a mapping for state files since dynamic requires don't work in React Native
-        const stateFileMap = {
-          'abia': require('../../assets/location/polling-by-state/abia.json'),
-          'adamawa': require('../../assets/location/polling-by-state/adamawa.json'),
-          'akwa-ibom': require('../../assets/location/polling-by-state/akwa-ibom.json'),
-          'anambra': require('../../assets/location/polling-by-state/anambra.json'),
-          'abuja': require('../../assets/location/polling-by-state/abuja.json'),
-          'bauchi': require('../../assets/location/polling-by-state/bauchi.json'),
-          'bayelsa': require('../../assets/location/polling-by-state/bayelsa.json'),
-          'benue': require('../../assets/location/polling-by-state/benue.json'),
-          'borno': require('../../assets/location/polling-by-state/borno.json'),
-          'cross-river': require('../../assets/location/polling-by-state/cross-river.json'),
-          'delta': require('../../assets/location/polling-by-state/delta.json'),
-          'ebonyi': require('../../assets/location/polling-by-state/ebonyi.json'),
-          'edo': require('../../assets/location/polling-by-state/edo.json'),
-          'ekiti': require('../../assets/location/polling-by-state/ekiti.json'),
-          'enugu': require('../../assets/location/polling-by-state/enugu.json'),
-          'gombe': require('../../assets/location/polling-by-state/gombe.json'),
-          'imo': require('../../assets/location/polling-by-state/imo.json'),
-          'jigawa': require('../../assets/location/polling-by-state/jigawa.json'),
-          'kaduna': require('../../assets/location/polling-by-state/kaduna.json'),
-          'kano': require('../../assets/location/polling-by-state/kano.json'),
-          'katsina': require('../../assets/location/polling-by-state/katsina.json'),
-          'kebbi': require('../../assets/location/polling-by-state/kebbi.json'),
-          'kogi': require('../../assets/location/polling-by-state/kogi.json'),
-          'kwara': require('../../assets/location/polling-by-state/kwara.json'),
-          'lagos': require('../../assets/location/polling-by-state/lagos.json'),
-          'nasarawa': require('../../assets/location/polling-by-state/nasarawa.json'),
-          'niger': require('../../assets/location/polling-by-state/niger.json'),
-          'ogun': require('../../assets/location/polling-by-state/ogun.json'),
-          'ondo': require('../../assets/location/polling-by-state/ondo.json'),
-          'osun': require('../../assets/location/polling-by-state/osun.json'),
-          'oyo': require('../../assets/location/polling-by-state/oyo.json'),
-          'plateau': require('../../assets/location/polling-by-state/plateau.json'),
-          'rivers': require('../../assets/location/polling-by-state/rivers.json'),
-          'sokoto': require('../../assets/location/polling-by-state/sokoto.json'),
-          'taraba': require('../../assets/location/polling-by-state/taraba.json'),
-          'yobe': require('../../assets/location/polling-by-state/yobe.json'),
-          'zamfara': require('../../assets/location/polling-by-state/zamfara.json'),
-        };
-
-        const pollingData = stateFileMap[stateValue];
-        if (pollingData) {
-          this.cache.pollingUnitsByState[stateValue] = pollingData;
-        } else {
-          console.warn(`⚠️ No polling data found for state: ${stateValue}`);
-          this.cache.pollingUnitsByState[stateValue] = {};
-        }
+        const pollingData = locationDataLoader.getStatePollingData(stateValue);
+        this.cache.pollingUnitsByState[stateValue] = pollingData;
       }
 
       const pollingUnits = this.cache.pollingUnitsByState[stateValue][cacheKey] || [];

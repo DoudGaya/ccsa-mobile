@@ -16,8 +16,10 @@ import LGASelect from '../common/LGASelect';
 import WardSelect from '../common/WardSelect';
 import PollingUnitSelect from '../common/PollingUnitSelect';
 import PhoneVerificationModal from '../common/PhoneVerificationModal';
+import DuplicateFieldAlert from '../common/DuplicateFieldAlert';
 import * as Location from 'expo-location';
 import optimizedLocationService from '../../services/optimizedLocationService';
+import useDuplicateFieldCheck from '../../hooks/useDuplicateFieldCheck';
 
 export default function ContactInfoStep({ control, errors, setValue, watch }) {
   const [loadingLocation, setLoadingLocation] = useState(false);
@@ -26,11 +28,20 @@ export default function ContactInfoStep({ control, errors, setValue, watch }) {
   const [phoneVerified, setPhoneVerified] = useState(false);
   const coordinates = watch('contactInfo.coordinates');
   
+  // Duplicate field checking
+  const {
+    checking: checkingDuplicates,
+    duplicateAlert,
+    checkField,
+    hideDuplicateAlert,
+  } = useDuplicateFieldCheck();
+  
   // Watch form values for cascading dropdowns
   const selectedState = watch('contactInfo.state');
   const selectedLocalGovernment = watch('contactInfo.localGovernment');
   const selectedWard = watch('contactInfo.ward');
   const currentPhoneNumber = watch('contactInfo.phoneNumber');
+  const currentEmail = watch('contactInfo.email');
   
   // State for dropdown options and loading states
   // Note: Individual select components now handle their own loading
@@ -71,6 +82,55 @@ export default function ContactInfoStep({ control, errors, setValue, watch }) {
     if (verified) {
       Alert.alert('Success', 'Phone number verified successfully!');
     }
+  };
+
+  // Handle duplicate field checks
+  const handlePhoneChange = async (text) => {
+    setValue('contactInfo.phoneNumber', text);
+    
+    // Check for duplicates when phone number is complete
+    if (text && text.length === 11) {
+      await checkField('Phone Number', text);
+    }
+    
+    // Reset verification if phone changes
+    if (text !== currentPhoneNumber) {
+      setPhoneVerified(false);
+    }
+  };
+
+  const handleEmailChange = async (text) => {
+    setValue('contactInfo.email', text);
+    
+    // Check for duplicates when email is valid
+    if (text && text.includes('@') && text.includes('.')) {
+      await checkField('Email', text);
+    }
+  };
+
+  const handleDuplicateIgnore = () => {
+    hideDuplicateAlert();
+    // Continue with the form submission or validation
+  };
+
+  const handleDuplicateCancel = () => {
+    hideDuplicateAlert();
+    // Clear the problematic field
+    if (duplicateAlert.fieldName === 'Phone Number') {
+      setValue('contactInfo.phoneNumber', '');
+    } else if (duplicateAlert.fieldName === 'Email') {
+      setValue('contactInfo.email', '');
+    }
+  };
+
+  const handleViewExistingRecord = () => {
+    hideDuplicateAlert();
+    // Navigate to view the existing record
+    Alert.alert(
+      'Existing Record',
+      'This feature will navigate to the existing farmer record.',
+      [{ text: 'OK' }]
+    );
   };
 
   const getCurrentLocation = async () => {
@@ -132,18 +192,16 @@ export default function ContactInfoStep({ control, errors, setValue, watch }) {
                     style={[styles.input, errors.contactInfo?.phoneNumber && styles.inputError]}
                     placeholder="e.g., 08012345678"
                     value={value}
-                    onChangeText={(text) => {
-                      onChange(text);
-                      if (text !== currentPhoneNumber) {
-                        setPhoneVerified(false); // Reset verification if phone changes
-                      }
-                    }}
+                    onChangeText={handlePhoneChange}
                     onBlur={onBlur}
                     keyboardType="phone-pad"
                     maxLength={11}
                   />
                   {phoneVerified && (
                     <Ionicons name="checkmark-circle" size={20} color="#10b981" style={styles.verifiedIcon} />
+                  )}
+                  {checkingDuplicates && (
+                    <Ionicons name="sync" size={20} color="#6b7280" style={styles.verifiedIcon} />
                   )}
                 </View>
               )}
@@ -211,11 +269,14 @@ export default function ContactInfoStep({ control, errors, setValue, watch }) {
                   style={[styles.input, errors.contactInfo?.email && styles.inputError]}
                   placeholder="farmer@example.com (optional)"
                   value={value}
-                  onChangeText={onChange}
+                  onChangeText={handleEmailChange}
                   onBlur={onBlur}
                   keyboardType="email-address"
                   autoCapitalize="none"
                 />
+                {checkingDuplicates && currentEmail === value && (
+                  <Ionicons name="sync" size={20} color="#6b7280" style={styles.verifiedIcon} />
+                )}
               </View>
             )}
           />
@@ -386,6 +447,17 @@ export default function ContactInfoStep({ control, errors, setValue, watch }) {
         phoneNumber={phoneToVerify}
         onVerificationComplete={handleVerificationComplete}
         onCancel={() => setShowPhoneVerification(false)}
+      />
+
+      {/* Duplicate Field Alert */}
+      <DuplicateFieldAlert
+        visible={duplicateAlert.visible}
+        fieldName={duplicateAlert.fieldName}
+        fieldValue={duplicateAlert.fieldValue}
+        existingRecord={duplicateAlert.existingRecord}
+        onViewRecord={handleViewExistingRecord}
+        onIgnore={handleDuplicateIgnore}
+        onCancel={handleDuplicateCancel}
       />
     </View>
   );

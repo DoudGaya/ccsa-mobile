@@ -200,14 +200,6 @@ export default function LoginScreen({ navigation }) {
             >
               <Text style={styles.forgotPasswordText}>Forgot Password?</Text>
             </TouchableOpacity>
-
-            {/* Register Link */}
-            <View style={styles.registerContainer}>
-              <Text style={styles.registerText}>Don't have an account? </Text>
-              <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-                <Text style={styles.registerLink}>Create Account</Text>
-              </TouchableOpacity>
-            </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -320,19 +312,5 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#6b7280',
     textDecorationLine: 'underline',
-  },
-  registerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  registerText: {
-    fontSize: 16,
-    color: '#6b7280',
-  },
-  registerLink: {
-    fontSize: 16,
-    color: '#013358',
-    fontWeight: '600',
   },
 });

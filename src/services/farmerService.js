@@ -1,6 +1,15 @@
 import { auth } from './firebase';
+// import { networkDebug } from '../utils/networkDebug';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:3000/api';
+const DEBUG_NETWORK = process.env.EXPO_PUBLIC_DEBUG_NETWORK === 'true';
+
+// Fallback URLs to try if primary fails
+const FALLBACK_URLS = [
+  'https://ccsa-mobile-api.vercel.app/api',
+  'http://192.168.10.219:3000/api',
+  'http://localhost:3000/api'
+];
 
 const getAuthToken = async () => {
   const user = auth.currentUser;
@@ -14,25 +23,93 @@ const getAuthToken = async () => {
     return token;
   } catch (error) {
     console.error('❌ Error getting auth token:', error);
-    throw new Error('Failed to get authentication token');
   }
+};
+
+// Function to find a working API endpoint
+const findWorkingEndpoint = async () => {
+  const endpoints = [API_BASE_URL, ...FALLBACK_URLS.filter(url => url !== API_BASE_URL)];
+  
+  for (const endpoint of endpoints) {
+    try {
+      console.log(`🔍 Testing endpoint: ${endpoint}`);
+      const healthUrl = endpoint.replace('/api', '') + '/api/health';
+      
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      
+      const response = await fetch(healthUrl, {
+        method: 'GET',
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (response.ok) {
+        console.log(`✅ Working endpoint found: ${endpoint}`);
+        return endpoint;
+      }
+    } catch (error) {
+      console.log(`❌ Endpoint failed: ${endpoint} - ${error.message}`);
+    }
+  }
+  
+  throw new Error('No working API endpoints found. Please check your internet connection.');
 };
 
 const makeAuthenticatedRequest = async (url, options = {}) => {
   try {
-    const token = await getAuthToken();
-    console.log('🌐 Making request to:', url);
+    console.log('🔍 Starting makeAuthenticatedRequest');
+    console.log('🌐 Original URL:', url);
     
-    const response = await fetch(url, {
+    // if (DEBUG_NETWORK) {
+    //   await networkDebug.checkConnectivity();
+    // }
+    
+    // Check network connectivity first
+    try {
+      console.log('🔍 Testing basic network connectivity...');
+      const testResponse = await fetch('https://www.google.com', { 
+        method: 'HEAD',
+        timeout: 5000 
+      });
+      console.log('✅ Basic network connectivity OK');
+    } catch (netError) {
+      console.error('❌ Network connectivity test failed:', netError);
+      throw new Error('No internet connection available');
+    }
+    
+    // Find working endpoint if URL contains the base URL
+    let finalUrl = url;
+    if (url.includes(API_BASE_URL)) {
+      try {
+        const workingEndpoint = await findWorkingEndpoint();
+        finalUrl = url.replace(API_BASE_URL, workingEndpoint);
+        console.log('🔄 Updated URL to working endpoint:', finalUrl);
+      } catch (error) {
+        console.warn('⚠️ Could not find working endpoint, using original URL');
+      }
+    }
+    
+    const token = await getAuthToken();
+    console.log('🌐 Making request to:', finalUrl);
+    console.log('🔑 Using token (first 20 chars):', token.substring(0, 20) + '...');
+    
+    const requestOptions = {
       ...options,
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
         ...options.headers,
       },
-    });
+    };
+    
+    console.log('📋 Request method:', requestOptions.method || 'GET');
+    
+    const response = await fetch(finalUrl, requestOptions);
     
     console.log('📊 Response status:', response.status);
+    console.log('📊 Response URL:', response.url);
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
@@ -48,6 +125,12 @@ const makeAuthenticatedRequest = async (url, options = {}) => {
     return response.json();
   } catch (error) {
     console.error('❌ makeAuthenticatedRequest error:', error);
+    console.error('❌ Error details:', {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+      cause: error.cause
+    });
     throw error;
   }
 };

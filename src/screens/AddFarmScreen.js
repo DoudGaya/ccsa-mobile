@@ -69,7 +69,6 @@ export default function AddFarmScreen({ navigation, route }) {
   // Safety check for farmer data
   React.useEffect(() => {
     if (!farmerId || !farmer) {
-      console.error('Missing farmerId or farmer data in route params');
       Alert.alert(
         'Error',
         'Missing farmer information. Returning to farmers list.',
@@ -133,24 +132,18 @@ export default function AddFarmScreen({ navigation, route }) {
         if (calculatedSize > 0) {
           // Update the farmSize field with calculated value
           setValue('farmInfo.farmSize', calculatedSize.toString());
-          console.log(`Farm size auto-calculated: ${calculatedSize} hectares`);
+        }        } catch (error) {
+          // Silently handle farm size calculation errors
         }
-      } catch (error) {
-        console.error('Error calculating farm size from polygon:', error);
-      }
     }
   }, [watchedPolygon, setValue]);
 
   const onSubmit = async (data) => {
-    console.log('=== ADD FARM SUBMISSION START ===');
-    console.log('Form data received:', JSON.stringify(data, null, 2));
-    
     try {
       setLoading(true);
 
       // Safety check
       if (!farmerId || !farmer) {
-        console.error('Missing farmer information:', { farmerId, farmer });
         throw new Error('Missing farmer information');
       }
 
@@ -193,7 +186,6 @@ export default function AddFarmScreen({ navigation, route }) {
         quantity: data.quantity ? parseFloat(data.quantity) : null,
       };
 
-      console.log('Creating farm with data:', processedData);
       await farmService.createFarm(farmerId, processedData);
       
       Alert.alert(
@@ -228,15 +220,11 @@ export default function AddFarmScreen({ navigation, route }) {
       Alert.alert('Error', error.message || 'Failed to add farm');
     } finally {
       setLoading(false);
-      console.log('=== ADD FARM SUBMISSION END ===');
     }
   };
 
   // Add form validation error handler
   const onFormError = (errors) => {
-    console.log('=== FORM VALIDATION ERRORS ===');
-    console.log('Validation errors:', JSON.stringify(errors, null, 2));
-    
     // Get first error message to show user
     const errorPaths = Object.keys(errors);
     const firstErrorPath = errorPaths[0];
@@ -298,10 +286,6 @@ export default function AddFarmScreen({ navigation, route }) {
           <TouchableOpacity
             style={styles.submitButton}
             onPress={() => {
-              console.log('Submit button pressed');
-              console.log('Form errors:', errors);
-              console.log('Has errors:', Object.keys(errors).length > 0);
-              
               // Try form submission
               const submitFunction = handleSubmit(onSubmit, onFormError);
               submitFunction();

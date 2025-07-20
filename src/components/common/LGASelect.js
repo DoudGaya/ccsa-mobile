@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import optimizedLocationService from '../../services/optimizedLocationService';
+import { lazyLocationService } from '../../services/lazyLocationService';
 
 export default function LGASelect({ selectedState, selectedValue, onValueChange, placeholder, error }) {
   const [modalVisible, setModalVisible] = useState(false);
@@ -24,10 +24,11 @@ export default function LGASelect({ selectedState, selectedValue, onValueChange,
       if (selectedState) {
         setLoading(true);
         try {
-          const lgaData = await optimizedLocationService.getLgasForState(selectedState);
+          const lgaData = await lazyLocationService.getLGAs(selectedState);
+          console.log(`🏘️ LGASelect: Loaded ${lgaData.length} LGAs for state ${selectedState}`);
           setLgas(lgaData);
         } catch (error) {
-          console.error('LGASelect: Error loading LGAs:', error);
+          console.error('❌ LGASelect: Error loading LGAs:', error);
           setLgas([]);
         } finally {
           setLoading(false);

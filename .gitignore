@@ -20,6 +20,10 @@ expo-env.d.ts
 *.key
 *.mobileprovision
 
+# Native build folders (CNG/Prebuild)
+/android
+/ios
+
 # Metro
 .metro-health-check*
 
@@ -32,12 +36,38 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
+# Environment files (CRITICAL SECURITY)
 .env
+.env*
 .env*.local
 .env.local
+.env.production
+.env.staging
+.env.development
 backend/.env
 backend/.env.local
+backend/.env.production
+backend/.env.staging
+
+# Debug and test files (SECURITY)
+debug-*.js
+*-debug.js
+firebase-test.js
+test-*.js
+temp-*.js
+*-temp.js
+
+# Sensitive configuration files
+firebase-adminsdk-*.json
+google-services.json
+GoogleService-Info.plist
+service-account-*.json
+
+# API Keys and secrets
+api-keys.json
+secrets.json
+credentials.json
+auth-config.js
 
 # typescript
 *.tsbuildinfo

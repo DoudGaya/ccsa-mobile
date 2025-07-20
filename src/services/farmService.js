@@ -1,6 +1,6 @@
 import { auth } from './firebase';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://192.168.10.220:3000/api';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://ccsa-mobile-api.vercel.app/api';
 
 const getAuthToken = async () => {
   const user = auth.currentUser;

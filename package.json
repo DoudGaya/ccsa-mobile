@@ -4,23 +4,50 @@
   "main": "index.js",
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web"
+    "start:prod": "NODE_ENV=production expo start",
+    "android": "expo run:android",
+    "android:prod": "NODE_ENV=production expo run:android",
+    "ios": "expo run:ios",
+    "ios:prod": "NODE_ENV=production expo run:ios",
+    "web": "expo start --web",
+    "build:android": "npx eas build --platform android",
+    "build:android:prod": "NODE_ENV=production npx eas build --platform android --profile production",
+    "build:apk": "npx eas build --platform android --profile apk",
+    "build:apk:preview": "npx eas build --platform android --profile preview",
+    "build:apk:local": "npx expo build:android --type apk",
+    "build:ios": "npx eas build --platform ios",
+    "build:ios:prod": "NODE_ENV=production npx eas build --platform ios --profile production",
+    "build:all": "npx eas build --platform all",
+    "build:all:prod": "NODE_ENV=production npx eas build --platform all --profile production",
+    "submit:android": "npx eas submit --platform android",
+    "submit:ios": "npx eas submit --platform ios",
+    "update": "npx eas update",
+    "update:prod": "NODE_ENV=production npx eas update --channel production",
+    "preview": "expo start --tunnel",
+    "install-cli": "npm install -g @expo/cli eas-cli",
+    "clean": "expo start --clear",
+    "clean:cache": "npm start -- --reset-cache",
+    "doctor": "npx expo-doctor",
+    "fix-icons": "node scripts/fix-icons.js"
   },
   "dependencies": {
+    "@babel/plugin-transform-runtime": "^7.28.0",
+    "@babel/runtime": "^7.27.6",
+    "@expo/config-plugins": "~10.1.1",
+    "@expo/prebuild-config": "~9.0.0",
     "@expo/vector-icons": "^14.1.0",
     "@hookform/resolvers": "^5.1.1",
     "@react-native-async-storage/async-storage": "^2.1.2",
+    "@react-native-community/netinfo": "^11.4.1",
     "@react-native-picker/picker": "2.11.1",
     "@react-navigation/bottom-tabs": "^7.4.2",
     "@react-navigation/drawer": "^7.5.2",
     "@react-navigation/native": "^7.1.14",
     "@react-navigation/stack": "^7.4.2",
     "@supabase/supabase-js": "^2.50.3",
-    "expo": "~53.0.17",
-    "expo-barcode-scanner": "^13.0.1",
-    "expo-camera": "~16.1.10",
+    "babel-preset-expo": "~13.0.0",
+    "expo": "53.0.20",
+    "expo-camera": "^16.1.11",
     "expo-file-system": "~18.1.11",
     "expo-location": "~18.1.6",
     "expo-print": "~14.1.4",
@@ -32,8 +59,9 @@
     "react": "19.0.0",
     "react-hook-form": "^7.60.0",
     "react-native": "0.79.5",
-    "react-native-html-to-pdf": "^0.12.0",
     "react-native-maps": "1.20.1",
+    "react-native-pdf": "^6.7.7",
+    "react-native-print": "^0.11.0",
     "react-native-qrcode-svg": "^6.3.15",
     "react-native-reanimated": "~3.17.4",
     "react-native-safe-area-context": "5.4.0",
@@ -41,15 +69,41 @@
     "react-native-svg": "15.11.2",
     "react-native-url-polyfill": "^2.0.0",
     "react-native-vector-icons": "^10.2.0",
-    "tailwindcss": "^4.1.11",
+    "tailwindcss": "^3.4.17",
     "twilio": "^5.7.3",
     "zod": "^3.25.74",
     "zustand": "^5.0.6"
   },
   "devDependencies": {
     "@babel/core": "^7.20.0",
+    "@expo/cli": "^0.24.20",
     "@types/react": "~19.0.10",
+    "metro": "^0.82.5",
+    "metro-config": "^0.82.5",
+    "metro-resolver": "^0.82.5",
+    "sharp": "^0.34.3",
     "typescript": "~5.8.3"
+  },
+  "expo": {
+    "doctor": {
+      "reactNativeDirectoryCheck": {
+        "exclude": [
+          "firebase",
+          "node-fetch",
+          "react-native-vector-icons",
+          "twilio",
+          "react-native-pdf",
+          "react-native-print"
+        ],
+        "listUnknownPackages": false
+      }
+    },
+    "install": {
+      "exclude": [
+        "react-native-pdf",
+        "react-native-print"
+      ]
+    }
   },
   "private": true
 }

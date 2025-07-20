@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import optimizedLocationService from '../../services/optimizedLocationService';
+import { lazyLocationService } from '../../services/lazyLocationService';
 
 export default function PollingUnitSelect({ selectedState, selectedLGA, selectedWard, selectedValue, onValueChange, placeholder, error }) {
   const [modalVisible, setModalVisible] = useState(false);
@@ -21,13 +21,14 @@ export default function PollingUnitSelect({ selectedState, selectedLGA, selected
   // Load polling units when state, LGA, or ward changes
   useEffect(() => {
     const loadPollingUnits = async () => {
-      if (selectedState && selectedLGA && selectedWard) {
+      if (selectedWard) {
         setLoading(true);
         try {
-          const pollingData = await optimizedLocationService.getPollingUnitsForWard(selectedState, selectedLGA, selectedWard);
+          const pollingData = await lazyLocationService.getPollingUnits(selectedWard);
+          console.log(`🗳️ PollingUnitSelect: Loaded ${pollingData.length} polling units for ward ${selectedWard}`);
           setPollingUnits(pollingData);
         } catch (error) {
-          console.error('PollingUnitSelect: Error loading polling units:', error);
+          console.error('❌ PollingUnitSelect: Error loading polling units:', error);
           setPollingUnits([]);
         } finally {
           setLoading(false);
@@ -38,7 +39,7 @@ export default function PollingUnitSelect({ selectedState, selectedLGA, selected
     };
 
     loadPollingUnits();
-  }, [selectedState, selectedLGA, selectedWard]);
+  }, [selectedWard]); // Only depend on selectedWard since it's the direct parent
 
   const filteredPollingUnits = pollingUnits.filter(unit =>
     unit.name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -76,7 +77,7 @@ export default function PollingUnitSelect({ selectedState, selectedLGA, selected
         onPress={() => setModalVisible(true)}
         disabled={!selectedState || !selectedLGA || !selectedWard || loading}
       >
-        <Ionicons name="ballot-outline" size={20} color="#9ca3af" style={styles.selectIcon} />
+        <Ionicons name="location-outline" size={20} color="#9ca3af" style={styles.selectIcon} />
         <Text style={[styles.selectText, !selectedValue && styles.placeholderText]}>
           {loading ? 'Loading polling units...' : getSelectedPollingUnitName()}
         </Text>

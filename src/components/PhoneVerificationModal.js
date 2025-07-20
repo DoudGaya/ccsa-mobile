@@ -60,10 +60,18 @@ const PhoneVerificationModal = ({
       setCodeSent(true);
       startCountdown();
       
-      if (__DEV__) {
+      // Check if we're using mock verification due to trial account or other issues
+      if (id.includes('trial_mock')) {
+        Alert.alert(
+          'SMS Service (Trial Mode)', 
+          'SMS service is currently in trial mode and can only send to verified numbers. Please use any 6-digit code (e.g., 123456) to verify your phone number for testing.',
+          [{ text: 'OK', style: 'default' }]
+        );
+      } else if (id.includes('mock') || id.includes('fallback') || id.includes('offline')) {
         Alert.alert(
           'Development Mode', 
-          'Mock verification enabled! Use any 6-digit code (e.g., 123456) to verify.'
+          'Mock verification enabled! Use any 6-digit code (e.g., 123456) to verify.',
+          [{ text: 'OK', style: 'default' }]
         );
       } else {
         Alert.alert('Success', 'Verification code sent to your phone');
@@ -136,7 +144,11 @@ const PhoneVerificationModal = ({
             <Text style={styles.subtitle}>
               {!codeSent 
                 ? "We'll send a verification code to this number" 
-                : "Enter the 6-digit code sent to your phone"
+                : verificationId && verificationId.includes('trial_mock')
+                  ? "SMS is in trial mode. Enter any 6-digit code (e.g., 123456) to verify"
+                  : verificationId && (verificationId.includes('mock') || verificationId.includes('fallback'))
+                    ? "Mock verification mode. Enter any 6-digit code to continue"
+                    : "Enter the 6-digit code sent to your phone"
               }
             </Text>
 
