@@ -15,8 +15,15 @@ class ErrorBoundary extends React.Component {
 
   componentDidCatch(error, errorInfo) {
     // Log the error for debugging
-    console.error('App crashed with error:', error);
-    console.error('Error info:', errorInfo);
+    console.error('💥 Error Boundary caught an error:', error);
+    console.error('📍 Error Info:', errorInfo);
+    console.error('🔍 Error Stack:', error.stack);
+    
+    // Store error details for display
+    this.setState({
+      error: error,
+      errorInfo: errorInfo
+    });
     
     this.setState({
       error: error,
@@ -46,7 +53,7 @@ class ErrorBoundary extends React.Component {
                   {this.state.error && this.state.error.toString()}
                 </Text>
                 <Text style={styles.debugText}>
-                  {this.state.errorInfo.componentStack}
+                  {this.state.errorInfo && this.state.errorInfo.componentStack}
                 </Text>
               </View>
             )}
