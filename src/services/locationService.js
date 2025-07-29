@@ -20,10 +20,10 @@ class LocationService {
 
     try {
       // Load the complete hierarchical data
-      console.log('📂 LocationService: Loading data from ../../data/states-and-lgas-and-wards-and-polling-units.json');
+      console.log('📂 LocationService: Loading data from ../../data/nigeria.json');
       
       // Try to require the data file
-      this.data = require('../../data/states-and-lgas-and-wards-and-polling-units.json');
+      this.data = require('../../data/nigeria.json');
       
       if (!this.data) {
         console.error('❌ LocationService: Data is null after require');
@@ -66,7 +66,7 @@ class LocationService {
       console.log('🔄 LocationService: Attempting alternative data loading...');
       try {
         // Import the data using dynamic import (for React Native)
-        const alternativeData = require('../../data/states-and-lgas-and-wards-and-polling-units.json');
+        const alternativeData = require('../../data/nigeria.json');
         if (alternativeData && Array.isArray(alternativeData) && alternativeData.length > 0) {
           console.log('✅ LocationService: Alternative loading successful');
           this.data = alternativeData;

@@ -1,8 +1,6 @@
 import { auth } from './firebase';
-// import { networkDebug } from '../utils/networkDebug';
 
 const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:3000/api';
-const DEBUG_NETWORK = process.env.EXPO_PUBLIC_DEBUG_NETWORK === 'true';
 
 // Fallback URLs to try if primary fails
 const FALLBACK_URLS = [

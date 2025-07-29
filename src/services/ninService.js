@@ -229,7 +229,7 @@ export const ninService = {
           
           if (!authResponse.ok) {
             const authError = await authResponse.json().catch(() => ({ message: 'Server error occurred' }));
-            console.log('📊 Authenticated API error response:', authError);
+         
             
             // Handle specific HTTP status codes
             if (authResponse.status === 404) {

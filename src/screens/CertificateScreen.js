@@ -82,8 +82,8 @@ export default function CertificateScreen({ navigation, route }) {
       const { uri } = await Print.printToFileAsync({
         html: htmlContent,
         base64: false,
-        width: 841,  // A4 landscape width in points (11.7" x 72)
-        height: 595, // A4 landscape height in points (8.3" x 72)
+        width: 841, 
+        height: 595,
         orientation: Print.Orientation.landscape,
         margins: {
           left: 36,   // 0.5 inch margins
@@ -147,7 +147,7 @@ export default function CertificateScreen({ navigation, route }) {
 
   const generateCertificateHTML = (farmer) => {
     const currentDate = new Date().toLocaleDateString('en-GB');
-    const certificateId = `FIMS-${farmer.nin}-${Date.now()}`;
+    const certificateId = `CCSA-${farmer.nin}-${Date.now()}`;
     
     return `
     <!DOCTYPE html>
@@ -167,7 +167,7 @@ export default function CertificateScreen({ navigation, route }) {
                 padding: 15px;
                 background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
                 color: #1a202c;
-                height: calc(100vh - 30px);
+                height: calc(100vh - 100px);
                 box-sizing: border-box;
             }
             
@@ -213,7 +213,7 @@ export default function CertificateScreen({ navigation, route }) {
             }
             
             .coat-of-arms {
-                width: 35px;
+                width: 400px;
                 height: 35px;
                 background: #2b6cb0;
                 border-radius: 50%;
@@ -265,15 +265,16 @@ export default function CertificateScreen({ navigation, route }) {
             .details-section {
                 display: grid;
                 grid-template-columns: 1fr 1fr;
-                gap: 15px;
-                margin: 15px 0;
+                gap: 4px;
+                margin: 4px 0;
                 flex: 1;
                 overflow: hidden;
             }
             
             .details-column {
                 background: rgba(237, 250, 253, 0.5);
-                padding: 12px;
+                padding: 6px 8px;
+                max-height: 100%;
                 border-radius: 6px;
                 border: 1px solid #bee3f8;
                 overflow: hidden;
@@ -283,16 +284,17 @@ export default function CertificateScreen({ navigation, route }) {
                 font-size: 11px;
                 font-weight: bold;
                 color: #2b6cb0;
-                margin-bottom: 8px;
+                margin-bottom: 4px;
                 border-bottom: 1px solid #3182ce;
-                padding-bottom: 3px;
+                padding-bottom: 2px;
                 text-transform: uppercase;
                 letter-spacing: 0.6px;
+                margin-top: 0 !important;
             }
             
             .detail-row {
                 display: flex;
-                margin: 4px 0;
+                margin: 2px 0;
                 align-items: center;
             }
             
@@ -386,8 +388,8 @@ export default function CertificateScreen({ navigation, route }) {
             
             <div class="content">
                 <div class="header">
-                    <div class="coat-of-arms">🇳🇬</div>
-                    <div class="title-main">Republic of Nigeria</div>
+                    <div class="coat-of-arms">COSMOPOLITAN UNIVERSITY ABUJA</div>
+                    <div class="title-main">Centre for Climate-Smart Agriculture (CCSA)</div>
                     <div class="title-sub">Farmers Information Management System</div>
                     <div style="font-size: 12px; font-weight: bold; color: #2b6cb0; margin-top: 6px;">
                         FARMER REGISTRATION CERTIFICATE
@@ -481,12 +483,7 @@ export default function CertificateScreen({ navigation, route }) {
                             <div class="detail-label">Issue Date:</div>
                             <div class="detail-value">${currentDate}</div>
                         </div>
-                        
-                        <div style="margin-top: 10px; text-align: center;">
-                            <div class="qr-placeholder">
-                                QR Code<br>Verification
-                            </div>
-                        </div>
+        
                     </div>
                 </div>
                 

@@ -10,6 +10,14 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Controller } from 'react-hook-form';
 import CustomSelect from '../common/CustomSelect';
+// Cluster options for dropdown
+const CLUSTER_OPTIONS = [
+  { label: 'Select Cluster', value: '' },
+  { label: 'NACOTAN', value: 'NACOTAN' },
+  // { label: 'Cluster B', value: 'CLUSTER_B' },
+  // { label: 'Cluster C', value: 'CLUSTER_C' },
+  // { label: 'Cluster D', value: 'CLUSTER_D' },
+];
 import SearchableSelect from '../common/SearchableSelect';
 import StateSelect from '../common/StateSelect';
 import LGASelect from '../common/LGASelect';
@@ -375,6 +383,7 @@ export default function ContactInfoStep({ control, errors, setValue, watch }) {
           )}
         </View>
 
+
         {/* Polling Unit */}
         <View style={styles.inputGroup}>
           <Text style={styles.label}>Polling Unit</Text>
@@ -395,6 +404,27 @@ export default function ContactInfoStep({ control, errors, setValue, watch }) {
           />
           {errors.contactInfo?.pollingUnit && (
             <Text style={styles.errorText}>{errors.contactInfo.pollingUnit.message}</Text>
+          )}
+        </View>
+
+        {/* Cluster */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Cluster</Text>
+          <Controller
+            control={control}
+            name="contactInfo.cluster"
+            render={({ field: { onChange, value } }) => (
+              <CustomSelect
+                options={CLUSTER_OPTIONS}
+                selectedValue={typeof value === 'string' ? value : ''}
+                onValueChange={val => onChange(val)}
+                placeholder="Select Cluster"
+                error={!!errors.contactInfo?.cluster}
+              />
+            )}
+          />
+          {errors.contactInfo?.cluster && (
+            <Text style={styles.errorText}>{errors.contactInfo.cluster.message}</Text>
           )}
         </View>
 

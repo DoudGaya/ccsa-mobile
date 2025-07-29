@@ -16,7 +16,10 @@
       "backgroundColor": "#ffffff"
     },
     "assetBundlePatterns": [
-      "**/*"
+      "**/*",
+      "!assets/nigeria.json",
+      "!assets/location/polling-units-by-ward.json",
+      "!assets/location/polling-by-state/*.json"
     ],
     "ios": {
       "supportsTablet": true,

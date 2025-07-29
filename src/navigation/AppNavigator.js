@@ -125,22 +125,22 @@ export default function AppNavigator() {
   }
 
   // Show error screen if auth initialization failed
-  if (error) {
-    return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 }}>
-        <Ionicons name="warning-outline" size={60} color="#ef4444" />
-        <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#1f2937', marginTop: 16, textAlign: 'center' }}>
-          Authentication Service Error
-        </Text>
-        <Text style={{ fontSize: 14, color: '#6b7280', marginTop: 8, textAlign: 'center' }}>
-          {error}
-        </Text>
-        <Text style={{ fontSize: 12, color: '#9ca3af', marginTop: 16, textAlign: 'center' }}>
-          Please restart the app or check your network connection.
-        </Text>
-      </View>
-    );
-  }
+  // if (error) {
+  //   return (
+  //     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 }}>
+  //       <Ionicons name="warning-outline" size={60} color="#ef4444" />
+  //       <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#1f2937', marginTop: 16, textAlign: 'center' }}>
+  //         Authentication Service Error
+  //       </Text>
+  //       <Text style={{ fontSize: 14, color: '#6b7280', marginTop: 8, textAlign: 'center' }}>
+  //         {error}
+  //       </Text>
+  //       <Text style={{ fontSize: 12, color: '#9ca3af', marginTop: 16, textAlign: 'center' }}>
+  //         Please restart the app or check your network connection.
+  //       </Text>
+  //     </View>
+  //   );
+  // }
 
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>

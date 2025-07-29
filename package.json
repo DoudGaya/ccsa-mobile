@@ -4,18 +4,13 @@
   "main": "index.js",
   "scripts": {
     "start": "expo start",
-    "start:prod": "NODE_ENV=production expo start",
     "android": "expo run:android",
-    "android:prod": "NODE_ENV=production expo run:android",
     "ios": "expo run:ios",
-    "ios:prod": "NODE_ENV=production expo run:ios",
     "web": "expo start --web",
     "build:android": "npx eas build --platform android",
     "build:android:prod": "NODE_ENV=production npx eas build --platform android --profile production",
     "build:apk": "npx eas build --platform android --profile apk",
     "build:apk:cache": "npx eas build --platform android --profile apk --clear-cache",
-    "build:apk:preview": "npx eas build --platform android --profile preview",
-    "build:apk:local": "npx expo build:android --type apk",
     "build:ios": "npx eas build --platform ios",
     "build:ios:prod": "NODE_ENV=production npx eas build --platform ios --profile production",
     "build:all": "npx eas build --platform all",
@@ -23,13 +18,7 @@
     "submit:android": "npx eas submit --platform android",
     "submit:ios": "npx eas submit --platform ios",
     "update": "npx eas update",
-    "update:prod": "NODE_ENV=production npx eas update --channel production",
-    "preview": "expo start --tunnel",
-    "install-cli": "npm install -g @expo/cli eas-cli",
-    "clean": "expo start --clear",
-    "clean:cache": "npm start -- --reset-cache",
-    "doctor": "npx expo-doctor",
-    "fix-icons": "node scripts/fix-icons.js"
+    "update:prod": "NODE_ENV=production npx eas update --channel production"
   },
   "dependencies": {
     "@babel/plugin-transform-runtime": "^7.28.0",
@@ -60,6 +49,7 @@
     "react": "19.0.0",
     "react-hook-form": "^7.60.0",
     "react-native": "0.79.5",
+    "react-native-gesture-handler": "^2.24.0",
     "react-native-maps": "1.20.1",
     "react-native-qrcode-svg": "^6.3.15",
     "react-native-reanimated": "~3.17.4",
@@ -78,7 +68,6 @@
     "metro": "^0.82.5",
     "metro-config": "^0.82.5",
     "metro-resolver": "^0.82.5",
-    "sharp": "^0.34.3",
     "typescript": "~5.8.3"
   },
   "expo": {
