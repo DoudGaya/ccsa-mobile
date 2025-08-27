@@ -1,7 +1,8 @@
 import { auth } from './firebase';
 import { logger } from '../utils/secureLogger';
+import API_CONFIG from '../config/api';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://ccsa-mobile-api.vercel.app/api';
+const API_BASE_URL = API_CONFIG.BASE_URL;
 
 // Network timeout configuration
 const NETWORK_TIMEOUT = 30000; // 30 seconds
@@ -112,7 +113,7 @@ export const ninService = {
       // Wrap the lookup logic in retry mechanism
       return await retryNetworkRequest(async () => {
         // First try the temp endpoint for testing
-        const tempUrl = `${API_BASE_URL}/temp-nin/lookup?nin=${nin}`;
+        const tempUrl = `${API_BASE_URL}/api/temp-nin/lookup?nin=${nin}`;
         console.log('🔍 Making request to temp endpoint:', tempUrl);
         
         try {
@@ -213,7 +214,7 @@ export const ninService = {
           const token = await getAuthToken();
           console.log('� Auth token obtained, making authenticated API request...');
           
-          const authUrl = `${API_BASE_URL}/nin/lookup?nin=${nin}`;
+          const authUrl = `${API_BASE_URL}/api/nin/lookup?nin=${nin}`;
           console.log('🔍 Making authenticated request to:', authUrl);
           
           const authResponse = await fetchWithTimeout(authUrl, {
@@ -365,7 +366,7 @@ export const ninService = {
       console.log('🧪 Testing NIN service connectivity...');
       
       // Test the health endpoint first
-      const healthUrl = `${API_BASE_URL}/health`;
+      const healthUrl = `${API_BASE_URL}/api/health`;
       console.log('🔍 Testing health endpoint:', healthUrl);
       
       const healthResponse = await fetchWithTimeout(healthUrl, {

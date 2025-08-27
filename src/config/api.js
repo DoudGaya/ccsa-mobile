@@ -1,9 +1,7 @@
 // API Configuration
 const API_CONFIG = {
   // Replace this with your actual backend API URL
-  BASE_URL: __DEV__ 
-    ? 'http://localhost:3000' // Development URL
-    : 'https://your-backend-api-url.vercel.app', // Production URL
+  BASE_URL: process.env.EXPO_PUBLIC_API_BASE_URL || 'https://fims.cosmopolitan.edu.ng', // Use environment variable or fallback
   
   // API endpoints
   ENDPOINTS: {
@@ -15,7 +13,16 @@ const API_CONFIG = {
     // Other API endpoints
     FARMERS: '/api/farmers',
     FARMS: '/api/farms',
-    AUTH: '/api/auth'
+    AGENTS: '/api/agents',
+    AUTH: '/api/auth',
+    ANALYTICS: '/api/analytics',
+    HEALTH: '/api/health',
+    
+    // NIN and SMS endpoints
+    NIN_LOOKUP: '/api/nin/lookup',
+    TEMP_NIN_LOOKUP: '/api/temp-nin/lookup',
+    SMS_SEND: '/api/sms/send-verification',
+    SMS_VERIFY: '/api/sms/verify-code'
   },
   
   // Request timeout in milliseconds

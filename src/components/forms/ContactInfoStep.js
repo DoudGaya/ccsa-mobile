@@ -10,15 +10,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Controller } from 'react-hook-form';
 import CustomSelect from '../common/CustomSelect';
-// Cluster options for dropdown
-const CLUSTER_OPTIONS = [
-  { label: 'Select Cluster', value: '' },
-  { label: 'NACOTAN', value: 'NACOTAN' },
-  // { label: 'Cluster B', value: 'CLUSTER_B' },
-  // { label: 'Cluster C', value: 'CLUSTER_C' },
-  // { label: 'Cluster D', value: 'CLUSTER_D' },
-];
 import SearchableSelect from '../common/SearchableSelect';
+import clusterService from '../../services/clusterService';
 import StateSelect from '../common/StateSelect';
 import LGASelect from '../common/LGASelect';
 import WardSelect from '../common/WardSelect';
@@ -34,6 +27,8 @@ export default function ContactInfoStep({ control, errors, setValue, watch }) {
   const [showPhoneVerification, setShowPhoneVerification] = useState(false);
   const [phoneToVerify, setPhoneToVerify] = useState('');
   const [phoneVerified, setPhoneVerified] = useState(false);
+  const [clusterOptions, setClusterOptions] = useState([{ label: 'Select Cluster', value: '' }]);
+  const [loadingClusters, setLoadingClusters] = useState(false);
   const coordinates = watch('contactInfo.coordinates');
   
   // Duplicate field checking
@@ -53,6 +48,41 @@ export default function ContactInfoStep({ control, errors, setValue, watch }) {
   
   // State for dropdown options and loading states
   // Note: Individual select components now handle their own loading
+
+  // Load clusters on component mount
+  useEffect(() => {
+    loadClusters();
+  }, []);
+
+  const loadClusters = async () => {
+    try {
+      setLoadingClusters(true);
+      const clusters = await clusterService.getClustersForDropdown();
+      
+      const clusterOptionsData = [
+        { label: 'Select Cluster', value: '' },
+        ...clusters.map(cluster => ({
+          label: `${cluster.label} (${cluster.clusterLead})`,
+          value: cluster.value,
+          farmerCount: cluster.farmerCount,
+        }))
+      ];
+      
+      setClusterOptions(clusterOptionsData);
+    } catch (error) {
+      console.error('Error loading clusters:', error);
+      Alert.alert(
+        'Error',
+        'Failed to load clusters. Please check your connection and try again.',
+        [
+          { text: 'Retry', onPress: loadClusters },
+          { text: 'Cancel', style: 'cancel' }
+        ]
+      );
+    } finally {
+      setLoadingClusters(false);
+    }
+  };
 
   // Reset dependent fields when parent field changes
   useEffect(() => {
@@ -386,7 +416,7 @@ export default function ContactInfoStep({ control, errors, setValue, watch }) {
 
         {/* Polling Unit */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Polling Unit</Text>
+          <Text style={styles.label}>Polling Unit *</Text>
           <Controller
             control={control}
             name="contactInfo.pollingUnit"
@@ -397,7 +427,7 @@ export default function ContactInfoStep({ control, errors, setValue, watch }) {
                 selectedWard={selectedWard}
                 selectedValue={value}
                 onValueChange={onChange}
-                placeholder="Select Polling Unit (Optional)"
+                placeholder="Select Polling Unit"
                 error={!!errors.contactInfo?.pollingUnit}
               />
             )}
@@ -409,28 +439,55 @@ export default function ContactInfoStep({ control, errors, setValue, watch }) {
 
         {/* Cluster */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Cluster</Text>
+          <Text style={styles.label}>Cluster *</Text>
           <Controller
             control={control}
             name="contactInfo.cluster"
             render={({ field: { onChange, value } }) => (
-              <CustomSelect
-                options={CLUSTER_OPTIONS}
-                selectedValue={typeof value === 'string' ? value : ''}
-                onValueChange={val => onChange(val)}
-                placeholder="Select Cluster"
-                error={!!errors.contactInfo?.cluster}
-              />
+              <View>
+                <CustomSelect
+                  options={clusterOptions}
+                  selectedValue={typeof value === 'string' ? value : ''}
+                  onValueChange={val => onChange(val)}
+                  placeholder={loadingClusters ? "Loading clusters..." : "Select Cluster"}
+                  error={!!errors.contactInfo?.cluster}
+                  disabled={loadingClusters}
+                />
+                {loadingClusters && (
+                  <View style={styles.loadingContainer}>
+                    <Ionicons name="sync" size={16} color="#6b7280" />
+                    <Text style={styles.loadingText}>Loading clusters...</Text>
+                  </View>
+                )}
+              </View>
             )}
           />
           {errors.contactInfo?.cluster && (
             <Text style={styles.errorText}>{errors.contactInfo.cluster.message}</Text>
           )}
+          <View style={styles.clusterHelpContainer}>
+            <Text style={styles.helperText}>
+              Select the farmer cluster or group for easier management
+            </Text>
+            <TouchableOpacity
+              style={styles.refreshButton}
+              onPress={loadClusters}
+              disabled={loadingClusters}
+            >
+              <Ionicons 
+                name="refresh" 
+                size={16} 
+                color="#013358" 
+                style={loadingClusters && styles.rotating} 
+              />
+              <Text style={styles.refreshButtonText}>Refresh</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* GPS Coordinates for Farmer Location */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Farmer Location (GPS)</Text>
+          <Text style={styles.label}>Farmer Location (GPS) *</Text>
           <TouchableOpacity
             style={styles.locationButton}
             onPress={getCurrentLocation}
@@ -456,8 +513,15 @@ export default function ContactInfoStep({ control, errors, setValue, watch }) {
               </Text>
             </View>
           )}
+          
+          {errors.contactInfo?.coordinates && (
+            <Text style={styles.errorText}>
+              {errors.contactInfo.coordinates.message || 'GPS coordinates are required'}
+            </Text>
+          )}
+          
           <Text style={styles.helperText}>
-            This captures the farmer's current location for verification
+            GPS coordinates are required for farmer verification and location tracking
           </Text>
         </View>
       </View>
@@ -631,5 +695,38 @@ const styles = StyleSheet.create({
     color: '#10b981',
     marginTop: 4,
     fontWeight: '500',
+  },
+  loadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    paddingHorizontal: 8,
+  },
+  loadingText: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginLeft: 4,
+    fontStyle: 'italic',
+  },
+  clusterHelpContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  refreshButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  refreshButtonText: {
+    fontSize: 12,
+    color: '#013358',
+    marginLeft: 4,
+    fontWeight: '500',
+  },
+  rotating: {
+    transform: [{ rotate: '180deg' }],
   },
 });

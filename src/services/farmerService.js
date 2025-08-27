@@ -1,12 +1,13 @@
 import { auth } from './firebase';
+import API_CONFIG from '../config/api';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:3000/api';
+const API_BASE_URL = API_CONFIG.BASE_URL;
 
 // Fallback URLs to try if primary fails
 const FALLBACK_URLS = [
-  'https://ccsa-mobile-api.vercel.app/api',
-  'http://192.168.10.219:3000/api',
-  'http://localhost:3000/api'
+  'https://fims.cosmopolitan.edu.ng',
+  'https://fims.cosmopolitan.edu.ng',
+  'https://fims.cosmopolitan.edu.ng'
 ];
 
 const getAuthToken = async () => {
@@ -21,6 +22,7 @@ const getAuthToken = async () => {
     return token;
   } catch (error) {
     console.error('❌ Error getting auth token:', error);
+    throw error;
   }
 };
 
@@ -135,7 +137,7 @@ const makeAuthenticatedRequest = async (url, options = {}) => {
 
 export const farmerService = {
   async createFarmer(farmerData) {
-    const url = `${API_BASE_URL}/farmers`;
+    const url = `${API_BASE_URL}/api/farmers`;
     const data = await makeAuthenticatedRequest(url, {
       method: 'POST',
       body: JSON.stringify(farmerData),
@@ -152,7 +154,7 @@ export const farmerService = {
       ...(search && { search }),
     });
     
-    const url = `${API_BASE_URL}/farmers?${queryParams}`;
+    const url = `${API_BASE_URL}/api/farmers?${queryParams}`;
     console.log('🔍 Fetching from URL:', url);
     
     try {
@@ -174,13 +176,13 @@ export const farmerService = {
   },
 
   async getFarmerById(id) {
-    const url = `${API_BASE_URL}/farmers/${id}`;
+    const url = `${API_BASE_URL}/api/farmers/${id}`;
     const data = await makeAuthenticatedRequest(url);
     return data;
   },
 
   async getFarmerByNin(nin) {
-    const url = `${API_BASE_URL}/farmers/search?query=${nin}&type=nin`;
+    const url = `${API_BASE_URL}/api/farmers/search?query=${nin}&type=nin`;
     const data = await makeAuthenticatedRequest(url);
     return data.farmers?.[0] || null;
   },
@@ -191,13 +193,13 @@ export const farmerService = {
       ...(type !== 'all' && { type }),
     });
     
-    const url = `${API_BASE_URL}/farmers/search?${queryParams}`;
+    const url = `${API_BASE_URL}/api/farmers/search?${queryParams}`;
     const data = await makeAuthenticatedRequest(url);
     return data.farmers || [];
   },
 
   async updateFarmer(id, updates) {
-    const url = `${API_BASE_URL}/farmers/${id}`;
+    const url = `${API_BASE_URL}/api/farmers/${id}`;
     const data = await makeAuthenticatedRequest(url, {
       method: 'PUT',
       body: JSON.stringify(updates),
@@ -206,7 +208,7 @@ export const farmerService = {
   },
 
   async deleteFarmer(id) {
-    const url = `${API_BASE_URL}/farmers/${id}`;
+    const url = `${API_BASE_URL}/api/farmers/${id}`;
     await makeAuthenticatedRequest(url, {
       method: 'DELETE',
     });
@@ -221,7 +223,7 @@ export const farmerService = {
       ...(bvn && { bvn }),
     });
     
-    const url = `${API_BASE_URL}/farmers/validate?${queryParams}`;
+    const url = `${API_BASE_URL}/api/farmers/validate?${queryParams}`;
     try {
       await makeAuthenticatedRequest(url);
       return []; // No conflicts

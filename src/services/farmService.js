@@ -1,6 +1,7 @@
 import { auth } from './firebase';
+import API_CONFIG from '../config/api';
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://ccsa-mobile-api.vercel.app/api';
+const API_BASE_URL = API_CONFIG.BASE_URL;
 
 const getAuthToken = async () => {
   const user = auth.currentUser;
@@ -12,22 +13,18 @@ export const farmService = {
   // Create a new farm for a farmer
   async createFarm(farmerId, farmData) {
     try {
-      console.log('=== FARM SERVICE CREATE START ===');
-      console.log('API_BASE_URL:', API_BASE_URL);
-      console.log('Creating farm for farmer:', farmerId);
-      console.log('Farm data:', JSON.stringify(farmData, null, 2));
-      
       const token = await getAuthToken();
-      console.log('Token obtained for request');
       
-      const requestUrl = `${API_BASE_URL}/farms`;
-      console.log('Request URL:', requestUrl);
+      const requestUrl = `${API_BASE_URL}/api/farms`;
       
       const requestBody = {
         farmerId,
         ...farmData
       };
-      console.log('Request body:', JSON.stringify(requestBody, null, 2));
+      
+      // Create AbortController for timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
       
       const response = await fetch(requestUrl, {
         method: 'POST',
@@ -36,46 +33,49 @@ export const farmService = {
           'Authorization': `Bearer ${token}`,
         },
         body: JSON.stringify(requestBody),
+        signal: controller.signal,
       });
-
-      console.log('Response status:', response.status);
-      console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+      
+      clearTimeout(timeoutId);
 
       const responseText = await response.text();
-      console.log('Raw response text:', responseText);
+      console.log('Farm creation response status:', response.status);
+      console.log('Farm creation response text:', responseText.substring(0, 500)); // Log first 500 chars
 
-      if (!response.ok) {
-        console.error('Response not OK:', response.status, response.statusText);
-        
+      if (!response.ok) {        
         try {
           const errorData = JSON.parse(responseText);
           throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
         } catch (parseError) {
-          // If JSON parsing fails, the response is likely HTML (error page)
+          // If JSON parse fails, the server returned HTML (likely an error page)
           console.error('Failed to parse error response as JSON:', parseError);
-          console.error('Response was likely HTML:', responseText.substring(0, 200));
-          throw new Error(`Server returned HTML instead of JSON. Status: ${response.status}. This usually indicates a server error.`);
+          console.error('Raw response:', responseText.substring(0, 1000)); // Log more detail
+          throw new Error(`Server returned HTML instead of JSON. Status: ${response.status}. Response: ${responseText.substring(0, 200)}...`);
         }
       }
 
-      const data = JSON.parse(responseText);
-      console.log('Parsed response data:', data);
-      console.log('=== FARM SERVICE CREATE SUCCESS ===');
-      
-      return data;
-    } catch (error) {
-      console.error('=== FARM SERVICE CREATE ERROR ===');
-      console.error('Farm creation error:', error);
-      throw error;
+    const data = JSON.parse(responseText);
+    
+    return data;
+  } catch (error) {
+    if (error.name === 'AbortError') {
+      throw new Error('Request timeout - please check your network connection and server status');
     }
-  },
+    
+    if (error.message.includes('Network request failed') || error.message.includes('fetch')) {
+      throw new Error(`Network error: ${error.message}. Please check if the server is running at ${API_BASE_URL}`);
+    }
+    
+    throw error;
+  }
+},
 
   // Get all farms for a farmer
   async getFarmsByFarmer(farmerId) {
     try {
       const token = await getAuthToken();
       
-      const response = await fetch(`${API_BASE_URL}/farms/farmer/${farmerId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/farms/farmer/${farmerId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -100,7 +100,7 @@ export const farmService = {
     try {
       const token = await getAuthToken();
       
-      const response = await fetch(`${API_BASE_URL}/farms/${farmId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/farms/${farmId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -126,7 +126,7 @@ export const farmService = {
     try {
       const token = await getAuthToken();
       
-      const response = await fetch(`${API_BASE_URL}/farms/${farmId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/farms/${farmId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -150,7 +150,7 @@ export const farmService = {
     try {
       const token = await getAuthToken();
       
-      const response = await fetch(`${API_BASE_URL}/farms/${farmId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/farms/${farmId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,

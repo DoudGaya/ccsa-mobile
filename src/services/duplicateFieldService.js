@@ -1,3 +1,5 @@
+import API_CONFIG from '../config/api';
+
 class DuplicateFieldService {
   constructor() {
     this.cache = new Map();
@@ -21,7 +23,7 @@ class DuplicateFieldService {
 
       // Make API call to check for duplicates
       const response = await fetch(
-        `${process.env.EXPO_PUBLIC_API_BASE_URL}/api/farmers/check-duplicate`,
+        `${API_CONFIG.BASE_URL}/api/farmers/check-duplicate`,
         {
           method: 'POST',
           headers: {

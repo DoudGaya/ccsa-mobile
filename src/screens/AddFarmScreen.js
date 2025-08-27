@@ -14,33 +14,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { farmInfoSchema } from '../utils/validation';
 import { farmService } from '../services/farmService';
-import { calculateFarmSizeFromPolygon } from '../utils/farmCalculations';
+import { calculateFarmSizeFromPolygon, processFarmDataWithSize, validateFarmCoordinates } from '../utils/farmCalculations';
 import LoadingScreen from './LoadingScreen';
 import FarmInfoStep from '../components/forms/FarmInfoStep';
 
-// Farm validation schema - make everything optional since farm info is typically optional
+// Extended farm validation schema - making key fields required
 const farmSchema = z.object({
-  farmInfo: z.object({
-    farmLocation: z.string().optional(),
-    farmSize: z.string().optional(),
-    farmCategory: z.string().optional(),
-    landforms: z.string().optional(),
-    farmOwnership: z.string().optional(),
-    state: z.string().optional(),
-    localGovernment: z.string().optional(),
-    farmingSeason: z.string().optional(),
-    ward: z.string().optional(),
-    pollingUnit: z.string().optional(),
-    primaryCrop: z.string().optional(),
-    secondaryCrop: z.array(z.string()).optional(),
-    farmingExperience: z.string().optional(),
-    farmSeason: z.string().optional(),
-    coordinates: z.object({
-      latitude: z.number(),
-      longitude: z.number(),
-    }).optional(),
-  }).optional(),
+  farmInfo: farmInfoSchema,
   farmLatitude: z.string().optional(),
   farmLongitude: z.string().optional(),
   farmPolygon: z.array(z.object({
@@ -48,18 +30,18 @@ const farmSchema = z.object({
     longitude: z.number(),
     timestamp: z.string().optional(),
     accuracy: z.number().optional(),
-  })).optional(),
-  soilType: z.string().optional(),
+  })).optional().default([]), // Made optional with default
+  soilType: z.string().min(1, 'Soil type is required'),
   soilPH: z.string().optional(),
-  soilFertility: z.string().optional(),
+  soilFertility: z.string().min(1, 'Soil fertility information is required'),
   farmCoordinates: z.any().optional(),
   coordinateSystem: z.string().optional(),
-  farmArea: z.string().optional(),
+  farmArea: z.string().optional(), // This will be calculated automatically
   farmElevation: z.string().optional(),
-  year: z.string().optional(),
-  yieldSeason: z.string().optional(),
-  crop: z.string().optional(),
-  quantity: z.string().optional(),
+  year: z.string().min(1, 'Year is required'),
+  yieldSeason: z.string().min(1, 'Yield season is required'),
+  crop: z.string().optional(), // Made optional as it's additional details
+  quantity: z.string().min(1, 'Quantity information is required'),
 }).passthrough(); // Allow additional fields that might be added by components
 
 export default function AddFarmScreen({ navigation, route }) {
@@ -113,7 +95,7 @@ export default function AddFarmScreen({ navigation, route }) {
       coordinateSystem: 'WGS84',
       farmArea: '',
       farmElevation: '',
-      year: '',
+      year: new Date().getFullYear().toString(),
       yieldSeason: '',
       crop: '',
       quantity: '',
@@ -132,9 +114,11 @@ export default function AddFarmScreen({ navigation, route }) {
         if (calculatedSize > 0) {
           // Update the farmSize field with calculated value
           setValue('farmInfo.farmSize', calculatedSize.toString());
-        }        } catch (error) {
-          // Silently handle farm size calculation errors
         }
+      } catch (error) {
+        // Silently handle farm size calculation errors
+        console.log('Farm size calculation error:', error);
+      }
     }
   }, [watchedPolygon, setValue]);
 
@@ -147,44 +131,44 @@ export default function AddFarmScreen({ navigation, route }) {
         throw new Error('Missing farmer information');
       }
 
-      // Flatten the nested structure and convert string numbers to actual numbers
-      const processedData = {
-        // Flatten farmInfo fields
-        farmLocation: data.farmInfo?.farmLocation || '',
-        farmSize: data.farmInfo?.farmSize ? parseFloat(data.farmInfo.farmSize) : null,
-        farmCategory: data.farmInfo?.farmCategory || '',
-        landforms: data.farmInfo?.landforms || '',
+      // Flatten the nested farmInfo structure to match API expectations
+      const flattenedData = {
+        // Extract and flatten farmInfo fields
+        farmSize: data.farmInfo?.farmSize || '',
+        primaryCrop: data.farmInfo?.primaryCrop || '',
+        produceCategory: data.farmInfo?.farmCategory || '',
         farmOwnership: data.farmInfo?.farmOwnership || '',
         farmState: data.farmInfo?.state || '',
         farmLocalGovernment: data.farmInfo?.localGovernment || '',
-        farmingSeason: data.farmInfo?.farmingSeason || '',
+        farmingSeason: data.farmInfo?.farmSeason || '',
         farmWard: data.farmInfo?.ward || '',
         farmPollingUnit: data.farmInfo?.pollingUnit || '',
-        primaryCrop: data.farmInfo?.primaryCrop || '',
         secondaryCrop: Array.isArray(data.farmInfo?.secondaryCrop) 
           ? data.farmInfo.secondaryCrop.join(', ') 
           : (data.farmInfo?.secondaryCrop || ''),
-        farmingExperience: data.farmInfo?.farmingExperience ? parseInt(data.farmInfo.farmingExperience) : null,
-        farmSeason: data.farmInfo?.farmSeason || '',
+        farmingExperience: data.farmInfo?.farmingExperience || '',
         
-        // Include farm coordinates from farmInfo
-        farmLatitude: data.farmInfo?.coordinates?.latitude || (data.farmLatitude ? parseFloat(data.farmLatitude) : null),
-        farmLongitude: data.farmInfo?.coordinates?.longitude || (data.farmLongitude ? parseFloat(data.farmLongitude) : null),
+        // Coordinates from farmInfo
+        farmLatitude: data.farmInfo?.coordinates?.latitude?.toString() || '',
+        farmLongitude: data.farmInfo?.coordinates?.longitude?.toString() || '',
         
-        // Include other farm fields
+        // Top-level fields
         farmPolygon: data.farmPolygon || [],
         soilType: data.soilType || '',
-        soilPH: data.soilPH ? parseFloat(data.soilPH) : null,
+        soilPH: data.soilPH || '',
         soilFertility: data.soilFertility || '',
-        farmCoordinates: data.farmInfo?.coordinates || data.farmCoordinates,
+        farmCoordinates: data.farmCoordinates || null,
         coordinateSystem: data.coordinateSystem || 'WGS84',
-        farmArea: data.farmArea ? parseFloat(data.farmArea) : null,
-        farmElevation: data.farmElevation ? parseFloat(data.farmElevation) : null,
-        year: data.year ? parseFloat(data.year) : null,
+        farmArea: data.farmArea || '',
+        farmElevation: data.farmElevation || '',
+        year: data.year || '',
         yieldSeason: data.yieldSeason || '',
-        crop: data.crop ? parseFloat(data.crop) : null,
-        quantity: data.quantity ? parseFloat(data.quantity) : null,
+        crop: data.crop || '',
+        quantity: data.quantity || '',
       };
+
+      // Use the enhanced farm processing utility to handle data and calculate farm size
+      const processedData = processFarmDataWithSize(flattenedData);
 
       await farmService.createFarm(farmerId, processedData);
       

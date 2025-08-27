@@ -71,6 +71,34 @@ const HORTICULTURE_TYPES = [
   'Vegetables', 'Fruits', 'Flowers', 'Ornamental Plants', 'Herbs', 'Spices'
 ];
 
+const SOIL_TYPES = [
+  { label: 'Select Soil Type', value: '' },
+  { label: 'Clay', value: 'CLAY' },
+  { label: 'Sandy', value: 'SANDY' },
+  { label: 'Loamy', value: 'LOAMY' },
+  { label: 'Silty', value: 'SILTY' },
+  { label: 'Peaty', value: 'PEATY' },
+  { label: 'Rocky', value: 'ROCKY' },
+];
+
+const SOIL_FERTILITY_LEVELS = [
+  { label: 'Select Soil Fertility', value: '' },
+  { label: 'Very High', value: 'VERY_HIGH' },
+  { label: 'High', value: 'HIGH' },
+  { label: 'Medium', value: 'MEDIUM' },
+  { label: 'Low', value: 'LOW' },
+  { label: 'Very Low', value: 'VERY_LOW' },
+];
+
+const YIELD_SEASONS = [
+  { label: 'Select Yield Season', value: '' },
+  { label: 'First Season (March-July)', value: 'FIRST_SEASON' },
+  { label: 'Second Season (August-December)', value: 'SECOND_SEASON' },
+  { label: 'Year Round', value: 'YEAR_ROUND' },
+  { label: 'Dry Season', value: 'DRY_SEASON' },
+  { label: 'Wet Season', value: 'WET_SEASON' },
+];
+
 // Helper function to get category-specific options
 const getCategoryOptions = (category) => {
   switch (category) {
@@ -583,7 +611,7 @@ export default function FarmInfoStep({ control, errors, setValue, watch, showTit
 
         {/* GPS Coordinates */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>GPS Coordinates</Text>
+          <Text style={styles.label}>GPS Coordinates *</Text>
           <TouchableOpacity
             style={styles.locationButton}
             onPress={getCurrentLocation}
@@ -609,11 +637,15 @@ export default function FarmInfoStep({ control, errors, setValue, watch, showTit
               </Text>
             </View>
           )}
+          
+          {errors?.farmInfo?.coordinates && (
+            <Text style={styles.errorText}>{errors.farmInfo.coordinates.message}</Text>
+          )}
         </View>
 
         {/* Farm Polygon */}
         <View style={styles.inputGroup}>
-          <Text style={styles.label}>Farm Boundary</Text>
+          <Text style={styles.label}>Farm Boundary *</Text>
           <FarmPolygonMapper
             onPolygonUpdate={(polygon) => {
               setValue('farmPolygon', polygon);
@@ -621,8 +653,239 @@ export default function FarmInfoStep({ control, errors, setValue, watch, showTit
             initialPolygon={watch('farmPolygon') || []}
           />
           <Text style={styles.helperText}>
-            Walk around farm boundary to capture the area
+            Walk around farm boundary to capture the area (minimum 3 points required)
           </Text>
+          
+          {errors?.farmPolygon && (
+            <Text style={styles.errorText}>{errors.farmPolygon.message}</Text>
+          )}
+        </View>
+
+        {/* Farm Size (Manual Input) */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Farm Size (Hectares)</Text>
+          <Controller
+            control={control}
+            name="farmInfo.farmSize"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <View style={styles.inputContainer}>
+                <Ionicons name="resize-outline" size={20} color="#9ca3af" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter farm size in hectares (auto-calculated from boundary)"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  keyboardType="decimal-pad"
+                />
+              </View>
+            )}
+          />
+          <Text style={styles.helperText}>
+            Size is auto-calculated from farm boundary. You can override this value if needed.
+          </Text>
+          {errors?.farmInfo?.farmSize && (
+            <Text style={styles.errorText}>{errors.farmInfo.farmSize.message}</Text>
+          )}
+        </View>
+
+        {/* Farming Experience */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Farming Experience (Years)</Text>
+          <Controller
+            control={control}
+            name="farmInfo.farmingExperience"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <View style={styles.inputContainer}>
+                <Ionicons name="time-outline" size={20} color="#9ca3af" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter years of farming experience"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  keyboardType="numeric"
+                />
+              </View>
+            )}
+          />
+          {errors?.farmInfo?.farmingExperience && (
+            <Text style={styles.errorText}>{errors.farmInfo.farmingExperience.message}</Text>
+          )}
+        </View>
+
+        {/* Soil Type */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Soil Type *</Text>
+          <Controller
+            control={control}
+            name="soilType"
+            render={({ field: { onChange, value } }) => (
+              <CustomSelect
+                options={SOIL_TYPES}
+                selectedValue={value}
+                onValueChange={onChange}
+                placeholder="Select Soil Type"
+                error={!!errors?.soilType}
+              />
+            )}
+          />
+          {errors?.soilType && (
+            <Text style={styles.errorText}>{errors.soilType.message}</Text>
+          )}
+        </View>
+
+        {/* Soil pH */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Soil pH Level</Text>
+          <Controller
+            control={control}
+            name="soilPH"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <View style={styles.inputContainer}>
+                <Ionicons name="flask-outline" size={20} color="#9ca3af" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter soil pH level (0-14)"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  keyboardType="decimal-pad"
+                />
+              </View>
+            )}
+          />
+          <Text style={styles.helperText}>
+            Soil pH scale: Acidic (0-6.9), Neutral (7.0), Alkaline (7.1-14)
+          </Text>
+          {errors?.soilPH && (
+            <Text style={styles.errorText}>{errors.soilPH.message}</Text>
+          )}
+        </View>
+
+        {/* Soil Fertility */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Soil Fertility *</Text>
+          <Controller
+            control={control}
+            name="soilFertility"
+            render={({ field: { onChange, value } }) => (
+              <CustomSelect
+                options={SOIL_FERTILITY_LEVELS}
+                selectedValue={value}
+                onValueChange={onChange}
+                placeholder="Select Soil Fertility Level"
+                error={!!errors?.soilFertility}
+              />
+            )}
+          />
+          {errors?.soilFertility && (
+            <Text style={styles.errorText}>{errors.soilFertility.message}</Text>
+          )}
+        </View>
+
+        {/* Production Year */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Production Year *</Text>
+          <Controller
+            control={control}
+            name="year"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <View style={styles.inputContainer}>
+                <Ionicons name="calendar-outline" size={20} color="#9ca3af" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter production year (e.g., 2024)"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  keyboardType="numeric"
+                />
+              </View>
+            )}
+          />
+          {errors?.year && (
+            <Text style={styles.errorText}>{errors.year.message}</Text>
+          )}
+        </View>
+
+        {/* Yield Season */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Yield/Harvest Season *</Text>
+          <Controller
+            control={control}
+            name="yieldSeason"
+            render={({ field: { onChange, value } }) => (
+              <CustomSelect
+                options={YIELD_SEASONS}
+                selectedValue={value}
+                onValueChange={onChange}
+                placeholder="Select Yield Season"
+                error={!!errors?.yieldSeason}
+              />
+            )}
+          />
+          {errors?.yieldSeason && (
+            <Text style={styles.errorText}>{errors.yieldSeason.message}</Text>
+          )}
+        </View>
+
+        {/* Expected Yield/Production Quantity */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Expected Production Quantity *</Text>
+          <Controller
+            control={control}
+            name="quantity"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <View style={styles.inputContainer}>
+                <Ionicons name="scale-outline" size={20} color="#9ca3af" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter expected quantity (in tons/kg/bags)"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  keyboardType="decimal-pad"
+                />
+              </View>
+            )}
+          />
+          <Text style={styles.helperText}>
+            Specify the expected production quantity with units (e.g., "50 bags", "2.5 tons")
+          </Text>
+          {errors?.quantity && (
+            <Text style={styles.errorText}>{errors.quantity.message}</Text>
+          )}
+        </View>
+
+        {/* Additional Crop Information (Different from Primary Crop) */}
+        <View style={styles.inputGroup}>
+          <Text style={styles.label}>Additional Crop Details</Text>
+          <Controller
+            control={control}
+            name="crop"
+            render={({ field: { onChange, onBlur, value } }) => (
+              <View style={styles.inputContainer}>
+                <Ionicons name="leaf-outline" size={20} color="#9ca3af" style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Additional crop information (variety, seed type, etc.)"
+                  value={value}
+                  onChangeText={onChange}
+                  onBlur={onBlur}
+                  multiline
+                  numberOfLines={2}
+                  textAlignVertical="top"
+                />
+              </View>
+            )}
+          />
+          <Text style={styles.helperText}>
+            Additional details about crop varieties, seed types, or cultivation methods
+          </Text>
+          {errors?.crop && (
+            <Text style={styles.errorText}>{errors.crop.message}</Text>
+          )}
         </View>
       </View>
 

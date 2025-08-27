@@ -18,6 +18,7 @@ import * as Sharing from 'expo-sharing';
 import * as Print from 'expo-print';
 import { useFarmerStore } from '../store/farmerStore';
 import LoadingScreen from './LoadingScreen';
+import PolygonMapMobile from '../components/PolygonMapMobile';
 
 export default function CertificateScreen({ navigation, route }) {
   const [nin, setNin] = useState('');
@@ -143,6 +144,105 @@ export default function CertificateScreen({ navigation, route }) {
     } catch (error) {
       Alert.alert('Error', 'Unable to share PDF file');
     }
+  };
+
+  const generatePolygonSVG = (polygonData) => {
+    if (!polygonData) return '';
+    
+    try {
+      let coordinates = [];
+      
+      // Handle different polygon data formats
+      if (typeof polygonData === 'string') {
+        const parsed = JSON.parse(polygonData);
+        coordinates = extractCoordinatesFromData(parsed);
+      } else if (typeof polygonData === 'object') {
+        coordinates = extractCoordinatesFromData(polygonData);
+      }
+
+      if (coordinates.length === 0) return '';
+
+      // Calculate bounds
+      const lats = coordinates.map(coord => coord[1]);
+      const lngs = coordinates.map(coord => coord[0]);
+      
+      const minLat = Math.min(...lats);
+      const maxLat = Math.max(...lats);
+      const minLng = Math.min(...lngs);
+      const maxLng = Math.max(...lngs);
+
+      // Convert to SVG coordinates
+      const width = 200;
+      const height = 150;
+      const padding = 10;
+      const svgWidth = width - padding * 2;
+      const svgHeight = height - padding * 2;
+      
+      const latRange = maxLat - minLat || 0.001;
+      const lngRange = maxLng - minLng || 0.001;
+      
+      const points = coordinates.map(([lng, lat]) => {
+        const x = padding + ((lng - minLng) / lngRange) * svgWidth;
+        const y = padding + ((maxLat - lat) / latRange) * svgHeight;
+        return `${x},${y}`;
+      });
+
+      const polygonPoints = points.join(' ');
+      
+      return `
+        <div style="margin-top: 10px;">
+          <div style="font-size: 10px; font-weight: 600; margin-bottom: 5px; color: #1a202c;">Farm Polygon:</div>
+          <svg width="${width}" height="${height}" style="border: 1px solid #e2e8f0; border-radius: 4px; background: #f8fafc;">
+            <defs>
+              <pattern id="grid" width="20" height="20" patternUnits="userSpaceOnUse">
+                <path d="M 20 0 L 0 0 0 20" fill="none" stroke="#e5e7eb" stroke-width="0.5" opacity="0.5"/>
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid)" />
+            <polygon points="${polygonPoints}" fill="rgba(34, 197, 94, 0.2)" stroke="#22c55e" stroke-width="1.5"/>
+            ${coordinates.map(([lng, lat], index) => {
+              const x = padding + ((lng - minLng) / lngRange) * svgWidth;
+              const y = padding + ((maxLat - lat) / latRange) * svgHeight;
+              return `<circle cx="${x}" cy="${y}" r="2" fill="#22c55e" stroke="white" stroke-width="1"/>`;
+            }).join('')}
+            <text x="${width - 30}" y="15" font-size="8" fill="#374151" font-weight="bold">N</text>
+            <path d="M ${width - 30} 20 L ${width - 27} 25 L ${width - 30} 30 L ${width - 33} 25 Z" fill="#ef4444"/>
+          </svg>
+          <div style="font-size: 8px; color: #6b7280; margin-top: 3px;">
+            Points: ${coordinates.length} | Bounds: ${minLat.toFixed(4)}°, ${minLng.toFixed(4)}° to ${maxLat.toFixed(4)}°, ${maxLng.toFixed(4)}°
+          </div>
+        </div>
+      `;
+    } catch (error) {
+      console.error('Error generating polygon SVG:', error);
+      return '';
+    }
+  };
+
+  const extractCoordinatesFromData = (data) => {
+    // Handle GeoJSON format
+    if (data && data.type === 'Polygon' && data.coordinates) {
+      return data.coordinates[0]; // First ring of the polygon
+    }
+    
+    // Handle GeoJSON Feature
+    if (data && data.geometry && data.geometry.type === 'Polygon') {
+      return data.geometry.coordinates[0];
+    }
+    
+    // Handle array of coordinate arrays
+    if (Array.isArray(data) && data.length > 0) {
+      if (Array.isArray(data[0]) && data[0].length >= 2) {
+        return data;
+      }
+    }
+    
+    // Handle coordinates property
+    if (data && data.coordinates) {
+      return extractCoordinatesFromData(data.coordinates);
+    }
+    
+    return [];
   };
 
   const generateCertificateHTML = (farmer) => {
@@ -483,6 +583,8 @@ export default function CertificateScreen({ navigation, route }) {
                             <div class="detail-label">Issue Date:</div>
                             <div class="detail-value">${currentDate}</div>
                         </div>
+                        
+                        ${farmer.farms && farmer.farms.length > 0 && farmer.farms[0].farmPolygon ? generatePolygonSVG(farmer.farms[0].farmPolygon) : ''}
         
                     </div>
                 </div>
@@ -698,6 +800,20 @@ export default function CertificateScreen({ navigation, route }) {
                           <Text style={styles.detailValue}>{farmer.farmInfo.primaryCrop}</Text>
                         </View>
                       )}
+                    </>
+                  )}
+
+                  {/* Farm Polygon Visualization */}
+                  {(farmer.farms && farmer.farms.length > 0 && farmer.farms[0].farmPolygon) && (
+                    <>
+                      <Text style={styles.sectionTitle}>Farm Polygon</Text>
+                      <View style={{ marginVertical: 16 }}>
+                        <PolygonMapMobile 
+                          polygonData={farmer.farms[0].farmPolygon}
+                          height={200}
+                          showCoordinates={true}
+                        />
+                      </View>
                     </>
                   )}
 

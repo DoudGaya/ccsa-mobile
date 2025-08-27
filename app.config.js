@@ -9,7 +9,6 @@ export default ({ config }) => {
     orientation: "portrait",
     icon: "./assets/icon.png",
     userInterfaceStyle: "light",
-    newArchEnabled: false,
     platforms: ["ios", "android"],
     splash: {
       image: "./assets/splash-icon.png",
@@ -82,8 +81,8 @@ export default ({ config }) => {
       },
       // Environment-specific configuration
       apiBaseUrl: isProduction 
-        ? "https://ccsa-mobile-api.vercel.app/api"
-        : process.env.EXPO_PUBLIC_API_BASE_URL || "http://localhost:3000/api"
+        ? "https://fims.cosmopolitan.edu.ng"
+        : process.env.EXPO_PUBLIC_API_BASE_URL || "https://fims.cosmopolitan.edu.ng"
     },
     updates: {
       url: "https://u.expo.dev/ccsa-mobile-fims"

@@ -51,16 +51,12 @@ export const contactInfoSchema = z.object({
   state: z.string().min(1, 'State is required'),
   localGovernment: z.string().min(1, 'Local Government is required'),
   ward: z.string().min(1, 'Ward is required'),
-  pollingUnit: z.string().optional(),
-  cluster: z.string().optional(),
-  coordinates: z.union([
-    z.object({
-      latitude: z.number(),
-      longitude: z.number(),
-    }),
-    z.null(),
-    z.undefined(),
-  ]).optional(),
+  pollingUnit: z.string().min(1, 'Polling Unit is required'), // Made required
+  cluster: z.string().min(1, 'Cluster is required'),
+  coordinates: z.object({
+    latitude: z.number({ required_error: 'GPS coordinates are required' }),
+    longitude: z.number({ required_error: 'GPS coordinates are required' }),
+  }, { required_error: 'GPS coordinates are required for farmer location' }),
 });
 
 // Bank info schema
@@ -78,28 +74,29 @@ export const refereeSchema = z.object({
   relation: z.string().min(1, 'Relation is required'),
 });
 
-// Farm info schema (optional)
+// Farm info schema with required fields for comprehensive data collection
 export const farmInfoSchema = z.object({
-  farmLocation: z.string().optional(),
-  farmSize: z.string().optional(),
-  farmCategory: z.string().optional(),
-  landforms: z.enum(['lowland', 'highland']).optional(),
-  farmOwnership: z.string().optional(),
-  state: z.string().optional(),
-  localGovernment: z.string().optional(),
-  ward: z.string().optional(),
-  pollingUnit: z.string().optional(),
-  primaryCrop: z.string().optional(),
-  secondaryCrop: z.string().optional(),
-  farmSeason: z.string().optional(),
+  farmLocation: z.string().optional(), // Made optional as mentioned in form
+  farmSize: z.string().optional(), // This will be calculated automatically
+  farmCategory: z.string().optional(), // Made optional as mentioned in form
+  landforms: z.enum(['lowland', 'highland']).optional(), // Made optional
+  farmOwnership: z.string().optional(), // Made optional
+  state: z.string().min(1, 'State is required'),
+  localGovernment: z.string().min(1, 'Local Government is required'),
+  ward: z.string().min(1, 'Ward is required'),
+  pollingUnit: z.string().min(1, 'Polling Unit is required'),
+  primaryCrop: z.string().optional(), // Made optional based on category selection
+  secondaryCrop: z.array(z.string()).optional(), // Allow array for multiple crops
+  farmSeason: z.string().optional(), // Made optional
+  farmingExperience: z.string().optional(), // Added farming experience
   coordinates: z.object({
-    latitude: z.number(),
-    longitude: z.number(),
-  }).optional(),
+    latitude: z.number({ required_error: 'Farm latitude is required' }),
+    longitude: z.number({ required_error: 'Farm longitude is required' }),
+  }, { required_error: 'Farm GPS coordinates are required' }),
   farmPolygon: z.array(z.object({
     latitude: z.number(),
     longitude: z.number(),
-  })).optional(),
+  })).optional().default([]), // Made optional with default empty array
 });
 
 // Complete farmer schema

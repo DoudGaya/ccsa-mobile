@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import API_CONFIG from '../config/api';
 
 /**
  * Enhanced Phone Verification Service with Network Handling
@@ -44,7 +45,7 @@ class PhoneVerificationService {
    */
   async sendCodeViaBackend(phoneNumber) {
     try {
-      const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'https://ccsa-mobile-api.vercel.app/api';
+      const API_BASE_URL = API_CONFIG.BASE_URL;
       
       // Create AbortController for timeout handling
       const controller = new AbortController();
@@ -264,7 +265,7 @@ class PhoneVerificationService {
    */
   async verifyCodeViaBackend(verificationCode) {
     try {
-      const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:3000/api';
+      const API_BASE_URL = API_CONFIG.BASE_URL;
       
       const controller = new AbortController();
       const timeoutId = setTimeout(() => {
@@ -401,7 +402,7 @@ class PhoneVerificationService {
         return { success: false, message: 'No internet connection' };
       }
 
-      const API_BASE_URL = process.env.EXPO_PUBLIC_API_BASE_URL || 'http://localhost:3000/api';
+      const API_BASE_URL = API_CONFIG.BASE_URL;
       
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
