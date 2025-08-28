@@ -81,8 +81,8 @@ export default ({ config }) => {
       },
       // Environment-specific configuration
       apiBaseUrl: isProduction 
-        ? "https://fims.cosmopolitan.edu.ng"
-        : process.env.EXPO_PUBLIC_API_BASE_URL || "https://fims.cosmopolitan.edu.ng"
+        ? "http://192.168.10.78:3000"
+        : process.env.EXPO_PUBLIC_API_BASE_URL || "http://192.168.10.78:3000"
     },
     updates: {
       url: "https://u.expo.dev/ccsa-mobile-fims"
