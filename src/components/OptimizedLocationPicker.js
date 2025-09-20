@@ -298,10 +298,10 @@ const LocationPicker = ({
         <View style={styles.summary}>
           <Text style={styles.summaryTitle}>Selected Location:</Text>
           <Text style={styles.summaryText}>
-            {states.find(s => s.value === selectedState)?.label}
-            {selectedLGA && ` → ${lgas.find(l => l.value === selectedLGA)?.label}`}
-            {selectedWard && ` → ${wards.find(w => w.value === selectedWard)?.label}`}
-            {selectedPollingUnit && showPollingUnits && ` → ${pollingUnits.find(p => p.value === selectedPollingUnit)?.label}`}
+            {states.find(s => s.value === selectedState)?.label || 'Unknown State'}
+            {selectedLGA && lgas.find(l => l.value === selectedLGA)?.label && ` → ${lgas.find(l => l.value === selectedLGA).label}`}
+            {selectedWard && wards.find(w => w.value === selectedWard)?.label && ` → ${wards.find(w => w.value === selectedWard).label}`}
+            {selectedPollingUnit && showPollingUnits && pollingUnits.find(p => p.value === selectedPollingUnit)?.label && ` → ${pollingUnits.find(p => p.value === selectedPollingUnit).label}`}
           </Text>
         </View>
       )}

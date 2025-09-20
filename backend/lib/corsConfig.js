@@ -2,15 +2,15 @@
 export const corsConfig = {
   // Production domains that are allowed to access the API
   allowedOrigins: [
-    'http://192.168.10.78:3000',
+    'https://fims.cosmopolitan.edu.ng',
     'https://ccsa-admin.vercel.app',
-    'http://192.168.10.78:3000',
+    'https://fims.cosmopolitan.edu.ng',
     // Add your production domains here
   ],
   
   // Development origins (only in development)
   developmentOrigins: [
-    'http://http://192.168.10.78:3000',
+    'http://https://fims.cosmopolitan.edu.ng',
     'http://127.0.0.1:3000',
     'http://192.168.1.100:3000',
     'http://192.168.10.219:3000',

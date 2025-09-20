@@ -20,6 +20,7 @@ import FarmerDetailsScreen from '../screens/FarmerDetailsScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import AnalyticsScreen from '../screens/AnalyticsScreen';
 import ChangePasswordScreen from '../screens/ChangePasswordScreen';
+import AttendanceScreen from '../screens/AttendanceScreen';
 import LoadingScreen from '../screens/LoadingScreen';
 
 
@@ -111,6 +112,13 @@ function DrawerNavigator() {
           drawerIcon: ({ color }) => <Ionicons name="analytics-outline" size={22} color={color} />
         }}
       />
+      <Drawer.Screen 
+        name="Attendance" 
+        component={AttendanceScreen} 
+        options={{
+          drawerIcon: ({ color }) => <Ionicons name="time-outline" size={22} color={color} />
+        }}
+      />
     </Drawer.Navigator>
   );
 }
@@ -177,6 +185,15 @@ export default function AppNavigator() {
             options={{ 
               headerShown: true,
               title: 'Certificate',
+              headerBackTitle: 'Back'
+            }}
+          />
+          <Stack.Screen 
+            name="AttendanceDetails" 
+            component={AttendanceScreen}
+            options={{ 
+              headerShown: true,
+              title: 'Attendance Tracking',
               headerBackTitle: 'Back'
             }}
           />

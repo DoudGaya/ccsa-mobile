@@ -146,6 +146,13 @@ export default function CertificateScreen({ navigation, route }) {
     }
   };
 
+  // Generate certificate verification URL (matching backend format)
+  const generateVerificationUrl = (farmer) => {
+    if (!farmer?.id) return farmer?.nin || '';
+    const certificateId = `CCSA-${new Date().getFullYear()}-${farmer.id.slice(-6).toUpperCase()}`;
+    return `https://fims.cosmopolitan.edu.ng/verify-certificate/${certificateId}`;
+  };
+
   const generatePolygonSVG = (polygonData) => {
     if (!polygonData) return '';
     
@@ -247,7 +254,8 @@ export default function CertificateScreen({ navigation, route }) {
 
   const generateCertificateHTML = (farmer) => {
     const currentDate = new Date().toLocaleDateString('en-GB');
-    const certificateId = `CCSA-${farmer.nin}-${Date.now()}`;
+    const certificateId = `CCSA-${new Date().getFullYear()}-${farmer.id.slice(-6).toUpperCase()}`;
+    const verificationUrl = generateVerificationUrl(farmer);
     
     return `
     <!DOCTYPE html>
@@ -705,17 +713,17 @@ export default function CertificateScreen({ navigation, route }) {
 
                 {/* QR Code Section */}
                 <View style={styles.qrSection}>
-                  <Text style={styles.qrTitle}>Farmer Verification QR Code</Text>
+                  <Text style={styles.qrTitle}>Certificate Verification QR Code</Text>
                   <View style={styles.qrContainer}>
                     <QRCode
-                      value={farmer.nin}
+                      value={generateVerificationUrl(farmer)}
                       size={120}
                       color="#1f2937"
                       backgroundColor="#ffffff"
                     />
                   </View>
                   <Text style={styles.qrDescription}>
-                    Scan to verify farmer identity
+                    Scan to verify certificate and farmer identity
                   </Text>
                 </View>
 

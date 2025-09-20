@@ -56,7 +56,7 @@ class PhoneVerificationService {
 
       console.log(`📱 Attempting backend SMS to: ${phoneNumber} via ${API_BASE_URL}`);
 
-      const response = await fetch(`${API_BASE_URL}/sms/send-verification`, {
+      const response = await fetch(`${API_BASE_URL}/api/sms/send-verification`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -273,7 +273,7 @@ class PhoneVerificationService {
         console.log('⏰ SMS verification request timed out after 8 seconds');
       }, 8000);
 
-      const response = await fetch(`${API_BASE_URL}/sms/verify-code`, {
+      const response = await fetch(`${API_BASE_URL}/api/sms/verify-code`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -407,7 +407,7 @@ class PhoneVerificationService {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000);
 
-      const response = await fetch(`${API_BASE_URL}/health`, {
+      const response = await fetch(`${API_BASE_URL}/api/health`, {
         method: 'GET',
         signal: controller.signal,
       });

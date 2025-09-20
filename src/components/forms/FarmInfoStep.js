@@ -13,7 +13,7 @@ import { Picker } from '@react-native-picker/picker';
 import * as Location from 'expo-location';
 import CropSelect from '../common/CropSelect';
 import MultiCropSelect from '../common/MultiCropSelect';
-import CustomSelect from '../common/CustomSelect';
+import EnhancedCustomSelect from '../common/EnhancedCustomSelect';
 import SearchableSelect from '../common/SearchableSelect';
 import StateSelect from '../common/StateSelect';
 import LGASelect from '../common/LGASelect';
@@ -246,7 +246,7 @@ export default function FarmInfoStep({ control, errors, setValue, watch, showTit
     }
 
     return (
-      <CustomSelect
+      <EnhancedCustomSelect
         options={[
           { label: placeholder, value: '' },
           ...options.map(option => ({ label: option, value: option }))
@@ -254,7 +254,10 @@ export default function FarmInfoStep({ control, errors, setValue, watch, showTit
         selectedValue={selectedValue}
         onValueChange={onValueChange}
         placeholder={placeholder}
+        title={placeholder}
+        icon="leaf-outline"
         error={error}
+        searchable={true}
       />
     );
   };
@@ -468,11 +471,13 @@ export default function FarmInfoStep({ control, errors, setValue, watch, showTit
             control={control}
             name="farmInfo.farmCategory"
             render={({ field: { onChange, value } }) => (
-              <CustomSelect
+              <EnhancedCustomSelect
                 options={FARM_CATEGORIES}
                 selectedValue={value}
                 onValueChange={onChange}
                 placeholder="Select Farm Category"
+                title="Select Farm Category"
+                icon="grid-outline"
                 error={!!errors?.farmInfo?.farmCategory}
               />
             )}
@@ -524,11 +529,13 @@ export default function FarmInfoStep({ control, errors, setValue, watch, showTit
             control={control}
             name="farmInfo.farmOwnership"
             render={({ field: { onChange, value } }) => (
-              <CustomSelect
+              <EnhancedCustomSelect
                 options={FARM_OWNERSHIP}
                 selectedValue={value}
                 onValueChange={onChange}
                 placeholder="Select Ownership Type"
+                title="Select Farm Ownership"
+                icon="person-outline"
                 error={!!errors?.farmInfo?.farmOwnership}
               />
             )}
@@ -595,11 +602,13 @@ export default function FarmInfoStep({ control, errors, setValue, watch, showTit
             control={control}
             name="farmInfo.farmSeason"
             render={({ field: { onChange, value } }) => (
-              <CustomSelect
+              <EnhancedCustomSelect
                 options={FARM_SEASONS}
                 selectedValue={value}
                 onValueChange={onChange}
                 placeholder="Select Farm Season"
+                title="Select Farm Season"
+                icon="calendar-outline"
                 error={!!errors?.farmInfo?.farmSeason}
               />
             )}
@@ -721,11 +730,13 @@ export default function FarmInfoStep({ control, errors, setValue, watch, showTit
             control={control}
             name="soilType"
             render={({ field: { onChange, value } }) => (
-              <CustomSelect
+              <EnhancedCustomSelect
                 options={SOIL_TYPES}
                 selectedValue={value}
                 onValueChange={onChange}
                 placeholder="Select Soil Type"
+                title="Select Soil Type"
+                icon="earth-outline"
                 error={!!errors?.soilType}
               />
             )}
@@ -770,11 +781,13 @@ export default function FarmInfoStep({ control, errors, setValue, watch, showTit
             control={control}
             name="soilFertility"
             render={({ field: { onChange, value } }) => (
-              <CustomSelect
+              <EnhancedCustomSelect
                 options={SOIL_FERTILITY_LEVELS}
                 selectedValue={value}
                 onValueChange={onChange}
                 placeholder="Select Soil Fertility Level"
+                title="Select Soil Fertility"
+                icon="trending-up-outline"
                 error={!!errors?.soilFertility}
               />
             )}
@@ -816,11 +829,13 @@ export default function FarmInfoStep({ control, errors, setValue, watch, showTit
             control={control}
             name="yieldSeason"
             render={({ field: { onChange, value } }) => (
-              <CustomSelect
+              <EnhancedCustomSelect
                 options={YIELD_SEASONS}
                 selectedValue={value}
                 onValueChange={onChange}
                 placeholder="Select Yield Season"
+                title="Select Harvest Season"
+                icon="time-outline"
                 error={!!errors?.yieldSeason}
               />
             )}
